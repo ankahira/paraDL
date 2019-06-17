@@ -40,7 +40,7 @@ def main():
     train_iterator = ch.iterators.SerialIterator(train, 10)
     test_iter = ch.iterators.SerialIterator(test, 5, repeat=False, shuffle=False)
 
-    model = L.Linear(CosmoNet())
+    model = CosmoNet()
 
     optimizer = ch.optimizers.Adam()
 

@@ -29,5 +29,7 @@ class CosmoNet(Chain):
         h = F.leaky_relu(self.Conv6(h))
         h = F.leaky_relu(self.FC1(h))
         h = F.leaky_relu(self.FC2(h))
+        if chainer.config.train:
+            return F.mean_squared_error(self.Output(h))
         return self.Output(h)
 
