@@ -1,19 +1,12 @@
-import tensorflow as tf
-import math
 import numpy as np
 import chainer as ch
-from chainer import backend
-from chainer import backends
-from chainer.backends import cuda
-from chainer import Function, FunctionNode, gradient_check, report, training, utils, Variable
-from chainer import datasets, initializers, iterators, optimizers, serializers
-from chainer import Link, Chain, ChainList
+from chainer import datasets
 import chainer.functions as F
-import chainer.links as L
-from chainer.training import extensions
-import pprint
+from chainer.dataset import concat_examples
+from chainer.backends.cuda import to_cpu
 
-# Local Modules
+
+# Local imports
 from models.CosmoNet import CosmoNet
 
 import matplotlib
@@ -22,59 +15,88 @@ matplotlib.use('Agg')
 
 
 def data_prep():
-    X = np.random.rand(32, 1, 64, 64, 64).astype(np.float32)
+    X = np.random.rand(40, 1, 64, 64, 64).astype(np.float32)
 
-    Y = np.random.rand(32, 2).astype(np.float32)
+    Y = np.random.rand(40, 2).astype(np.float32)
 
-    return X, Y
+    train, test = datasets.split_dataset_random(datasets.TupleDataset(X, Y), first_size=30)
+
+    train_iterator = ch.iterators.SerialIterator(train, 10)
+    test_iter = ch.iterators.SerialIterator(test, 10, repeat=False, shuffle=False)
+
+    return train_iterator, test_iter
+
+
+def train(model, train_iter, test_iter, optimizer, gpu_id, epochs):
+
+    while train_iter.epoch < epochs:
+
+        # ---------- One iteration of the training loop ----------
+        train_batch = train_iter.next()
+        image_train, target_train = concat_examples(train_batch, gpu_id)
+
+        # Calculate the prediction of the network
+        prediction_train = model(image_train)
+
+        # Calculate the loss with softmax_cross_entropy
+        loss = F.mean_squared_error(prediction_train, target_train)
+
+        # Calculate the gradients in the network
+        model.cleargrads()
+        loss.backward()
+
+        # Update all the trainable parameters
+        optimizer.update()
+        # --------------------- until here ---------------------
+
+        # Check the validation accuracy of prediction after every epoch
+        if train_iter.is_new_epoch:  # If this iteration is the final iteration of the current epoch
+
+            # Display the training loss
+            print('Epoch:{:02d} train_loss:{:.04f} '.format(train_iter.epoch, float(to_cpu(loss.array))), end='')
+
+            test_losses = []
+            test_accuracies = []
+            while True:
+                test_batch = test_iter.next()
+                image_test, target_test = concat_examples(test_batch, gpu_id)
+
+                # Forward the test data
+                prediction_test = model(image_test)
+
+                # Calculate the loss
+                loss_test = F.mean_squared_error(prediction_test, target_test)
+                test_losses.append(to_cpu(loss_test.array))
+
+                # Calculate the R2
+                accuracy = F.r2_score(prediction_test, target_test)
+                accuracy.to_cpu()
+                test_accuracies.append(accuracy.array)
+
+                if test_iter.is_new_epoch:
+                    test_iter.reset()
+                    break
+
+            print('val_loss:{:.04f} '.format(np.mean(test_losses)))
 
 
 def main():
 
     # Input data and label
 
-    x, y = data_prep()
-
-    train, test = datasets.split_dataset_random(datasets.TupleDataset(x, y), first_size=20)
-
-    train_iterator = ch.iterators.SerialIterator(train, 10)
-    test_iter = ch.iterators.SerialIterator(test, 5, repeat=False, shuffle=False)
+    train_iterator, test_iterator = data_prep()
 
     model = CosmoNet()
+
+    gpu_id = -1  # Set to -1 if you use CPU
+    if gpu_id >= 0:
+        model.to_gpu(gpu_id)
 
     optimizer = ch.optimizers.Adam()
 
     optimizer.setup(model)
 
-    updater = training.StandardUpdater(train_iterator, optimizer)
-
-    trainer = training.Trainer(updater, (5, 'epoch'), out='results')
-    # Evaluate the model with the test dataset for each epoch
-    trainer.extend(extensions.Evaluator(test_iter, model))
-    # trainer.extend(extensions.DumpGraph('main/loss'))
-
-    trainer.extend(extensions.snapshot(), trigger=(20, 'epoch'))
-
-    # Write a log of evaluation statistics for each epoch
-    trainer.extend(extensions.LogReport())
-
-    # Save two plot images to the result dir
-    if extensions.PlotReport.available():
-        trainer.extend(
-            extensions.PlotReport(['main/loss', 'validation/main/loss'],
-                                  'epoch', file_name='loss.png'))
-        trainer.extend(
-            extensions.PlotReport(
-                ['main/accuracy', 'validation/main/accuracy'],
-                'epoch', file_name='accuracy.png'))
-
-    # Print selected entries of the log to stdout
-    trainer.extend(extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss',
-         'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-
-    #  Run the training
-    trainer.run()
+    train(model, train_iterator, test_iterator, optimizer, gpu_id, 10)
 
 
 if __name__ == "__main__":

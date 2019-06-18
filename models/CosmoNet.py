@@ -18,7 +18,7 @@ class CosmoNet(Chain):
             self.FC2 = L.Linear(None, 256)
             self.Output = L.Linear(None, 2)
 
-    def forward(self, x, y):
+    def forward(self, x):
         h = F.leaky_relu(self.Conv1(x))
         h = F.average_pooling_3d(h, ksize=2, stride=2)
         h = F.leaky_relu(self.Conv2(h))
@@ -29,7 +29,5 @@ class CosmoNet(Chain):
         h = F.leaky_relu(self.Conv6(h))
         h = F.leaky_relu(self.FC1(h))
         h = F.leaky_relu(self.FC2(h))
-        if chainer.config.train:
-            return F.mean_squared_error(self.Output(h))
         return self.Output(h)
 
