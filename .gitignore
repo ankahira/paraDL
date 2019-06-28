@@ -1,5 +1,6 @@
-data/
-
+data/*.hdf5
+.idea/
+*.hdf5
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
