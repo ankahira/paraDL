@@ -13,7 +13,7 @@ matplotlib.use('Agg')
 
 def temp_data_prep():
 
-    X = np.random.rand(40, 4, 128, 128, 128).astype(np.float32)
+    X = np.random.rand(40, 4, 64, 64, 64).astype(np.float32)
 
     Y = np.random.rand(40, 4).astype(np.float32)
 
