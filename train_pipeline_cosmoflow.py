@@ -3,7 +3,7 @@ from chainer import datasets, training
 from chainer.training import extensions
 
 # Local imports
-from models.CosmoFlow import CosmoFlow, ParallelCosmoFlowSN
+from models import  PipelineCosmoFlow
 from extras import temp_data_prep
 from data.data import CosmoDataset
 
@@ -25,26 +25,24 @@ def main():
     train_iterator = ch.iterators.SerialIterator(train, 1)
     vali_iterator = ch.iterators.SerialIterator(test, 1, repeat=False, shuffle=False)
 
-    model = CosmoFlow()
+    model = PipelineCosmoFlow()
 
     print("Model Created successfully")
 
-    device_id = -1  # Set to -1 if you use CPU
-    if device_id >= 0:
-        model.to_gpu(device_id)
+    device = 0  # Use this as the main device
 
     optimizer = ch.optimizers.Adam()
 
     optimizer.setup(model)
     # Create the updater, using the optimizer
-    updater = training.StandardUpdater(train_iterator, optimizer, device=device_id)
+    updater = training.StandardUpdater(train_iterator, optimizer, device=device)
 
     # Set up a trainer
     trainer = training.Trainer(updater, (10, 'epoch'), out='result')
 
     log_interval = (1, 'epoch')
 
-    trainer.extend(extensions.Evaluator(vali_iterator, model, device=device_id))
+    trainer.extend(extensions.Evaluator(vali_iterator, model, device=device))
 
     trainer.extend(extensions.DumpGraph('main/loss'))
     # trainer.extend(extensions.snapshot())

@@ -1,4 +1,3 @@
-import chainer
 from chainer import Chain
 import chainer.functions as F
 import chainer.links as L
