@@ -6,7 +6,7 @@ import chainer.links as L
 
 
 # Local Imports
-from .parallel_convolution import ParallelConvolution2D
+from .channel_parallel_convolution import ChannelParallelConvolution2D
 
 
 class Block(chainer.Chain):
@@ -14,12 +14,12 @@ class Block(chainer.Chain):
         super(Block, self).__init__()
         with self.init_scope():
             if comm.size <= in_channels:
-                self.conv = ParallelConvolution2D(comm,
-                                                  in_channels,
-                                                  out_channels,
-                                                  ksize,
-                                                  pad=pad,
-                                                  nobias=True)
+                self.conv = ChannelParallelConvolution2D(comm,
+                                                         in_channels,
+                                                        out_channels,
+                                                        ksize,
+                                                        pad=pad,
+                                                        nobias=True)
             else:
                 self.conv = chainer.links.Convolution2D(in_channels,
                                                         out_channels,

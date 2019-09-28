@@ -3,7 +3,7 @@ import chainer.functions as F
 import chainer.links as L
 
 # Local Imports
-from .parallel_convolution import ParallelConvolution2D
+from .channel_parallel_convolution import ChannelParallelConvolution2D
 
 
 class AlexNet(chainer.Chain):
@@ -12,11 +12,11 @@ class AlexNet(chainer.Chain):
         super(AlexNet, self).__init__()
         self.comm = comm
         with self.init_scope():
-            self.conv1 = L.Convolution2D(3, 96, 11, stride=4)
-            self.conv2 = ParallelConvolution2D(comm, 96, 256, 5, pad=2)
-            self.conv3 = ParallelConvolution2D(comm, 256, 384, 3, pad=1)
-            self.conv4 = ParallelConvolution2D(comm, 384, 384, 3, pad=1)
-            self.conv5 = ParallelConvolution2D(comm, 384, 256, 3, pad=1)
+            self.conv1 = ChannelParallelConvolution2D(comm, 3, 96, 11, stride=4)
+            self.conv2 = ChannelParallelConvolution2D(comm, 96, 256, 5, pad=2)
+            self.conv3 = ChannelParallelConvolution2D(comm, 256, 384, 3, pad=1)
+            self.conv4 = ChannelParallelConvolution2D(comm, 384, 384, 3, pad=1)
+            self.conv5 = ChannelParallelConvolution2D(comm, 384, 256, 3, pad=1)
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)
