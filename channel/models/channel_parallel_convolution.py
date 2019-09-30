@@ -8,6 +8,9 @@ import numpy as np
 # This is really messy but will be improved at a later date.(or maybe never)
 # Doing a lot of stuff at __init__ so as to initialise class depending on channels.
 
+# each node receives 1 input channel, keep F filters but each filter only have dimension 1xKxK
+# so that it create F output channel also with the size of FxW'xH'.
+
 
 class ChannelParallelConvolution2D(chainer.links.Convolution2D):
     # Each node receives 1 input channel, keeps all filters  then all reduce.

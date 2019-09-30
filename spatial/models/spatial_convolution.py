@@ -32,7 +32,7 @@ class SpatialConvolution2D(chainer.links.Convolution2D):
                 # Concat to existing X
                 if hasattr(x, "array"):
                     temp_x = x.array
-                    x = chainer.Variable(cp.concatenate((temp_x,received_halo_region), axis=-1))
+                    x = chainer.Variable(cp.concatenate((temp_x, received_halo_region), axis=-1))
                 else:
                     x = cp.concatenate((x, received_halo_region), axis=-1)
 

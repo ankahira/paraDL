@@ -1,36 +1,41 @@
-import random
+#!/usr/bin/env python
+
+from __future__ import print_function
 import argparse
+import multiprocessing
+import random
+
 import numpy as np
-import chainer
-from chainer import dataset
+
+
+import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
+from chainer.function_hooks import CupyMemoryProfileHook
 
+import chainermn
+
+import chainer.links as L
 
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 
-import matplotlib
-matplotlib.use('Agg')
 
 # Global Variables
-
 TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
-BATCH_SIZE = 32
-EPOCHS = 10
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
     def __init__(self, path, root, mean, crop_size, random=True):
         self.base = chainer.datasets.LabeledImageDataset(path, root)
-        self.mean = mean.astype(chainer.get_dtype())
+        self.mean = mean.astype(np.float32)
         self.crop_size = crop_size
         self.random = random
 
@@ -64,65 +69,97 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 def main():
     models = {
-        'alex': AlexNet,
+        'alexnet': AlexNet,
         'resnet': ResNet50,
         'vgg': VGG,
     }
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
-    parser.add_argument('--model', '-m', choices=models.keys(), default='AlexNet', help='Convnet model')
-    parser.add_argument('--gpu', '-g', default=0, type=int, help='GPU ID (negative value indicates CPU)')
-    parser.add_argument('--logdir', '-l', default='results', help='log dir')
+    parser.add_argument('--model', '-M', choices=models.keys(), default='AlexNet', help='Convnet model')
+    parser.add_argument('--batchsize', '-B', type=int, default=32, help='Learning minibatch size')
+    parser.add_argument('--epochs', '-E', type=int, default=10, help='Number of epochs to train')
+    parser.add_argument('--out', '-o', default='results', help='Output directory')
     args = parser.parse_args()
 
-    device = args.gpu
+    batch_size = args.batchsize
+    epochs = args.epochs
+    out = args.out
 
-    print('Device: {}'.format(device))
-    print('Dtype: {}'.format(chainer.config.dtype))
-    print('# Minibatch-size: {}'.format(BATCH_SIZE))
-    print('# epoch: {}'.format(EPOCHS))
-    print('')
+    # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
+    multiprocessing.set_start_method('forkserver')
+    p = multiprocessing.Process()
+    p.start()
+    p.join()
 
-    # Initialize the model to train
+    # Prepare ChainerMN communicator.
+    comm = chainermn.create_communicator("pure_nccl")
+    device = comm.intra_rank
 
-    model = models[args.model]()
+    if comm.rank == 0:
+        print('==========================================')
+        print('Num of GPUs : {}'.format(comm.size))
+        print('Model :  {}'.format(args.model))
+        print('Minibatch-size: {}'.format(batch_size))
+        print('Epochs: {}'.format(args.epochs))
+        print('==========================================')
 
-    # TODO :  Implement some code for checkpointing to restart
-    chainer.backends.cuda.get_device_from_id(device).use()
+    model = L.Classifier(models[args.model](comm))
+
+    chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
 
-    # Load the mean file
+    # Split and distribute the dataset. Only worker 0 loads the whole dataset.
+    # Datasets of worker 0 are evenly split and distributed to all workers.
     mean = np.load(MEAN_FILE)
 
-    # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, model.insize)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, model.insize, False)
-    train_iter = chainer.iterators.MultiprocessIterator(train, BATCH_SIZE)
-    val_iter = chainer.iterators.MultiprocessIterator(val, BATCH_SIZE, repeat=False)
-    converter = dataset.concat_examples
+    # All ranks load the data
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
 
-    # Set up an optimizer
-    optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
+    # Create a multinode iterator such that each rank gets the same batch
+
+    if comm.rank != 0:
+        train = chainermn.datasets.create_empty_dataset(train)
+        val = chainermn.datasets.create_empty_dataset(val)
+
+    train_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.SerialIterator(train, args.batchsize), comm)
+    val_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.SerialIterator(val, args.batchsize, repeat=False, shuffle=False), comm)
+
+    # Create a multi node optimizer to perform the all_reduce step
+    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = training.updaters.StandardUpdater(train_iter, optimizer, converter=converter, device=device)
-    trainer = training.Trainer(updater, (EPOCHS, 'epoch'), out=args.logdir)
+    updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    # Extensions and Reporting
-    trainer.extend(extensions.Evaluator(val_iter, model, converter=converter, device=device), trigger=(1, 'epoch'))
-    trainer.extend(extensions.snapshot(filename='trainer_checkpoint'), trigger=(1, 'epoch'))
-    trainer.extend(extensions.snapshot_object(model, 'model_checkpoint'), trigger=(1, 'epoch'))
-    trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
-    trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-    trainer.extend(extensions.PrintReport([
-        'epoch', 'iteration', 'main/loss', 'validation/main/loss',
-        'main/accuracy', 'validation/main/accuracy', 'lr'
-    ]), trigger=(1, 'epoch'))
-    trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-    trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-    trainer.extend(extensions.ProgressBar())
+    # Create a multi node evaluator from an evaluator.
+    evaluator = extensions.Evaluator(val_iter, model, device=device)
+    evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
+    trainer.extend(evaluator, trigger=(1, 'epoch'))
 
+    # Some display and output extensions are necessary only for one worker.
+    # (Otherwise, there would just be repeated outputs.)
+    if comm.rank == 0:
+        # trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
+        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        # trainer.extend(extensions.PrintReport([
+        #     'epoch', 'elapsed_time', 'main/loss', 'validation/main/loss',
+        #     'main/accuracy', 'validation/main/accuracy',
+        # ]), trigger=(1, 'epoch'))
+        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'],
+        # 'epoch', filename='loss.png'))
+        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'],
+        # 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar())
+
+    # TODO : Figure out how to send this report to a file
+
+    if comm.rank == 0:
+        print("Starting training .....")
     trainer.run()
 
 
