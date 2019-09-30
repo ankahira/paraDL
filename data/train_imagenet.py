@@ -118,7 +118,7 @@ def main():
     else:
         train = None
         val = None
-
+    # model inputs come from datasets, and each process takes different mini-batches
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
