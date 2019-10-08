@@ -3,7 +3,7 @@ import chainer.functions as F
 import chainer.links as L
 import numpy as np
 
-from .spatial_convolution import SpatialConvolution2D, SpatialConvolution2DGather
+from .spatial_convolution import SpatialConvolution2D
 
 
 class AlexNet(chainer.Chain):
@@ -15,7 +15,7 @@ class AlexNet(chainer.Chain):
         self.comm = comm
         self.n_proc = self.comm.size
         with self.init_scope():
-            self.conv1 = SpatialConvolution2DGather(comm, None, 96, 11, stride=4)
+            self.conv1 = SpatialConvolution2D(comm, None, 96, 11, stride=4)
             self.conv2 = L.Convolution2D(None, 256, 5, pad=2)
             self.conv3 = L.Convolution2D(None, 384, 3, pad=1)
             self.conv4 = L.Convolution2D(None, 384, 3, pad=1)

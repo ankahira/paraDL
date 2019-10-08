@@ -8,13 +8,12 @@ import numpy as np
 # This is really messy but will be improved at a later date.(or maybe never)
 # Doing a lot of stuff at __init__ so as to initialise class depending on channels.
 
-# each node receives 1 input channel, keep F filters but each filter only have dimension 1xKxK
+# Each node receives 1 input channel, keep F filters but each filter only have dimension 1xKxK
 # so that it create F output channel also with the size of FxW'xH'.
 
 
 class ChannelParallelConvolution2D(chainer.links.Convolution2D):
-    # Each node receives 1 input channel, keeps all filters  then all reduce.
-    def __init__(self, comm, in_channels, out_channels, *args, **kwargs):
+    def __init__(self, comm, in_channels, out_channels, *args, **   kwargs):
         if in_channels <= comm.size:
             self.comm = comm
             self.in_channels = in_channels
@@ -33,12 +32,14 @@ class ChannelParallelConvolution2D(chainer.links.Convolution2D):
 
     def __call__(self, x, *args, **kwargs):
         if self.parallel_execute:
+            # Each process gets C/P channels
             x = x[:, self._channel_indices, :, :]
             y = super(ChannelParallelConvolution2D, self).__call__(x)
-            temp_y = y.array
-            temp_ys = self.comm.allreduce(temp_y)
-            ys = chainer.Variable(temp_ys)
+            temp_array = y.array
+            ys = chainermn.communicators.mpi_communicator_base.MpiCommunicatorBase.allreduce(self.comm, temp_array)
+            ys = chainer.Variable(ys)
             return ys
         else:
             y = super(ChannelParallelConvolution2D, self).__call__(x)
             return y
+

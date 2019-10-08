@@ -116,24 +116,19 @@ def main():
     trainer = training.Trainer(updater, (epochs, 'epoch'), out=out)
 
     # Extensions and Reporting
-    trainer.extend(extensions.Evaluator(val_iter, model, converter=converter, device=device), trigger=(1, 'epoch'))
-    # trainer.extend(extensions.snapshot(filename='trainer_checkpoint'), trigger=(1, 'epoch'))
-    # trainer.extend(extensions.snapshot_object(model, 'model_checkpoint'), trigger=(1, 'epoch'))
-    # trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
-    # trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-    # trainer.extend(extensions.PrintReport([
-    #     'epoch', 'elapsed_time',  'main/loss', 'validation/main/loss',
-    #     'main/accuracy', 'validation/main/accuracy',
-    # ]), trigger=(1, 'epoch'))
-    # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-    # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-    # trainer.extend(extensions.ProgressBar())
+    trainer.extend(extensions.Evaluator(val_iter, model, converter=converter, device=device), trigger=(20, 'epoch'))
 
-    # TODO : Figure out how to send this report to a file
-    hook = CupyMemoryProfileHook()
-    with hook:
-        trainer.run()
-    hook.print_report(unit='MB')
+    trainer.extend(extensions.DumpGraph('main/loss'))
+    trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
+    trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+    trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
+    # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'],
+    # 'epoch', filename='loss.png'))
+    # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'],
+    # 'epoch', filename='accuracy.png'))
+    trainer.extend(extensions.ProgressBar())
+
+    trainer.run()
 
 
 if __name__ == '__main__':

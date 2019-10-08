@@ -6,27 +6,23 @@ import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
 
+from .spatial_convolution import SpatialConvolution2D
 
 class BottleNeckA(chainer.Chain):
 
-    def __init__(self, in_size, ch, out_size, stride=2):
+    def __init__(self, comm, in_size, ch, out_size, stride=2):
+        self.comm = comm
         super(BottleNeckA, self).__init__()
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = L.Convolution2D(
-                in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv1 = SpatialConvolution2D(self.comm, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = L.Convolution2D(
-                ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = SpatialConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = L.Convolution2D(
-                ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = SpatialConvolution2D(self.comm, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(out_size)
-
-            self.conv4 = L.Convolution2D(
-                in_size, out_size, 1, stride, 0,
-                initialW=initialW, nobias=True)
+            self.conv4 = SpatialConvolution2D(self.comm, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
@@ -40,19 +36,17 @@ class BottleNeckA(chainer.Chain):
 
 class BottleNeckB(chainer.Chain):
 
-    def __init__(self, in_size, ch):
+    def __init__(self, comm, in_size, ch):
+        self.comm = comm
         super(BottleNeckB, self).__init__()
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = L.Convolution2D(
-                in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv1 = SpatialConvolution2D(self.comm, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = L.Convolution2D(
-                ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = SpatialConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = L.Convolution2D(
-                ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = SpatialConvolution2D(self.comm, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(in_size)
 
     def __call__(self, x):
@@ -65,11 +59,12 @@ class BottleNeckB(chainer.Chain):
 
 class Block(chainer.ChainList):
 
-    def __init__(self, layer, in_size, ch, out_size, stride=2):
+    def __init__(self, comm, layer, in_size, ch, out_size, stride=2):
+        self.comm = comm
         super(Block, self).__init__()
-        self.add_link(BottleNeckA(in_size, ch, out_size, stride))
+        self.add_link(BottleNeckA(self.comm, in_size, ch, out_size, stride))
         for i in range(layer - 1):
-            self.add_link(BottleNeckB(out_size, ch))
+            self.add_link(BottleNeckB(self.comm, out_size, ch))
 
     def __call__(self, x):
         for f in self.children():
@@ -79,18 +74,18 @@ class Block(chainer.ChainList):
 
 class ResNet50(chainer.Chain):
 
-    insize = 224
+    insize = 226
 
-    def __init__(self):
+    def __init__(self, comm):
+        self.comm = comm
         super(ResNet50, self).__init__()
         with self.init_scope():
-            self.conv1 = L.Convolution2D(
-                3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.conv1 = SpatialConvolution2D(self.comm, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
             self.bn1 = L.BatchNormalization(64)
-            self.res2 = Block(3, 64, 64, 256, 1)
-            self.res3 = Block(4, 256, 128, 512)
-            self.res4 = Block(6, 512, 256, 1024)
-            self.res5 = Block(3, 1024, 512, 2048)
+            self.res2 = Block(self.comm, 3, 64, 64, 256, 1)
+            self.res3 = Block(self.comm, 4, 256, 128, 512)
+            self.res4 = Block(self.comm, 6, 512, 256, 1024)
+            self.res5 = Block(self.comm, 3, 1024, 512, 2048)
             self.fc = L.Linear(2048, 1000)
 
     def __call__(self, x):
@@ -103,3 +98,4 @@ class ResNet50(chainer.Chain):
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
         return h
+

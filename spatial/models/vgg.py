@@ -1,52 +1,69 @@
+import cupy as cp
 import chainer
 import chainer.functions as F
 import chainer.links as L
 
-
-class VGG(chainer.ChainList):
-    def __init__(self):
-        super(VGG, self).__init__(
-            VGGBlock(64),
-            VGGBlock(128),
-            VGGBlock(256, 3),
-            VGGBlock(512, 3),
-            VGGBlock(512, 3, True))
-
-    def forward(self, x):
-        for f in self.children():
-            x = f(x)
-        if chainer.config.train:
-            return x
-        return F.softmax(x)
+from .spatial_convolution import SpatialConvolution2D
 
 
-class VGGBlock(chainer.Chain):
-    def __init__(self, n_channels, n_convs=2, fc=False):
-        w = chainer.initializers.HeNormal()
-        super(VGGBlock, self).__init__()
+class VGG(chainer.Chain):
+    def __init__(self, comm):
+        super(VGG, self).__init__()
+        self.comm = comm
+        self.n_proc = self.comm.size
         with self.init_scope():
-            self.conv1 = L.Convolution2D(None, n_channels, 3, 1, 1, initialW=w)
-            self.conv2 = L.Convolution2D(
-                n_channels, n_channels, 3, 1, 1, initialW=w)
-            if n_convs == 3:
-                self.conv3 = L.Convolution2D(
-                    n_channels, n_channels, 3, 1, 1, initialW=w)
-            if fc:
-                self.fc4 = L.Linear(None, 4096, initialW=w)
-                self.fc5 = L.Linear(4096, 4096, initialW=w)
-                self.fc6 = L.Linear(4096, 1000, initialW=w)
+            self.conv1_1 = SpatialConvolution2D(comm, 3, 64, 3, 1, 1)
+            self.conv1_2 = SpatialConvolution2D(comm, 64, 64, 3, 1, 1)
 
-        self.n_convs = n_convs
-        self.fc = fc
+            self.conv2_1 = SpatialConvolution2D(comm, 64, 128, 3, 1, 1)
+            self.conv2_2 = SpatialConvolution2D(comm, 128, 128, 3, 1, 1)
+
+            self.conv3_1 = SpatialConvolution2D(comm, 128, 256, 3, 1, 1)
+            self.conv3_2 = SpatialConvolution2D(comm, 256, 256, 3, 1, 1)
+            self.conv3_3 = SpatialConvolution2D(comm, 256, 256, 3, 1, 1)
+
+            self.conv4_1 = SpatialConvolution2D(comm, 256, 512, 3, 1, 1)
+            self.conv4_2 = SpatialConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv4_3 = SpatialConvolution2D(comm, 512, 512, 3, 1, 1)
+
+            self.conv5_1 = SpatialConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv5_2 = SpatialConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv5_3 = SpatialConvolution2D(comm, 512, 512, 3, 1, 1)
+
+            self.fc6 = L.Linear(None, 4096)
+            self.fc7 = L.Linear(4096, 4096)
+            self.fc8 = L.Linear(4096, 1000)
 
     def forward(self, x):
-        h = F.relu(self.conv1(x))
-        h = F.relu(self.conv2(h))
-        if self.n_convs == 3:
-            h = F.relu(self.conv3(h))
+        partions = cp.array_split(x, self.n_proc, 3)
+        x = partions[self.comm.rank]
+
+        h = F.relu(self.conv1_1(x))
+        h = F.relu(self.conv1_2(h))
         h = F.max_pooling_2d(h, 2, 2)
-        if self.fc:
-            h = F.dropout(F.relu(self.fc4(h)))
-            h = F.dropout(F.relu(self.fc5(h)))
-            h = self.fc6(h)
+
+        h = F.relu(self.conv2_1(h))
+        h = F.relu(self.conv2_2(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv3_1(h))
+        h = F.relu(self.conv3_2(h))
+        h = F.relu(self.conv3_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv4_1(h))
+        h = F.relu(self.conv4_2(h))
+        h = F.relu(self.conv4_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv5_1(h))
+        h = F.relu(self.conv5_2(h))
+        h = F.relu(self.conv5_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.dropout(F.relu(self.fc6(h)))
+        h = F.dropout(F.relu(self.fc7(h)))
+        h = self.fc8(h)
+
         return h
+

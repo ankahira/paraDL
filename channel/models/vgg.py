@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import chainer
 import chainer.functions as F
 import chainer.links as L
@@ -8,97 +6,78 @@ import chainer.links as L
 # Local Imports
 from .channel_parallel_convolution import ChannelParallelConvolution2D
 
-
-class Block(chainer.Chain):
-    def __init__(self, comm, in_channels, out_channels, ksize, pad=1):
-        super(Block, self).__init__()
-        with self.init_scope():
-            if comm.size <= in_channels:
-                self.conv = ChannelParallelConvolution2D(comm,
-                                                         in_channels,
-                                                        out_channels,
-                                                        ksize,
-                                                        pad=pad,
-                                                        nobias=True)
-            else:
-                self.conv = chainer.links.Convolution2D(in_channels,
-                                                        out_channels,
-                                                        ksize,
-                                                        pad=pad,
-                                                        nobias=True)
-            self.bn = L.BatchNormalization(out_channels)
-
-    def __call__(self, x):
-        h = self.conv(x)
-        h = self.bn(h)
-        return F.relu(h)
+import chainer
+import chainer.functions as F
+import chainer.links as L
 
 
 class VGG(chainer.Chain):
-    def __init__(self, comm, class_labels=1000):
+    def __init__(self, comm):
         super(VGG, self).__init__()
         self.comm = comm
-
         with self.init_scope():
-            self.block1_1 = Block(comm, 3,   64,  3)
-            self.block1_2 = Block(comm, 64,  64,  3)
-            self.block2_1 = Block(comm, 64,  128, 3)
-            self.block2_2 = Block(comm, 128, 128, 3)
-            self.block3_1 = Block(comm, 128, 256, 3)
-            self.block3_2 = Block(comm, 256, 256, 3)
-            self.block3_3 = Block(comm, 256, 256, 3)
-            self.block4_1 = Block(comm, 256, 512, 3)
-            self.block4_2 = Block(comm, 512, 512, 3)
-            self.block4_3 = Block(comm, 512, 512, 3)
-            self.block5_1 = Block(comm, 512, 512, 3)
-            self.block5_2 = Block(comm, 512, 512, 3)
-            self.block5_3 = Block(comm, 512, 512, 3)
-            self.fc1 = L.Linear(None, 512, nobias=True)
-            self.bn_fc1 = L.BatchNormalization(512)
-            self.fc2 = L.Linear(None, class_labels, nobias=True)
+            self.conv1_1 = ChannelParallelConvolution2D(comm, 3, 64, 3, 1, 1)
+            self.conv1_2 = ChannelParallelConvolution2D(comm, 64, 64, 3, 1, 1)
 
-    def __call__(self, x):
-        # 64 channel blocks:
-        h = self.block1_1(x)
-        h = F.dropout(h, ratio=0.3)
-        h = self.block1_2(h)
-        h = F.max_pooling_2d(h, ksize=2, stride=2)
+            self.conv2_1 = ChannelParallelConvolution2D(comm, 64, 128, 3, 1, 1)
+            self.conv2_2 = ChannelParallelConvolution2D(comm, 128, 128, 3, 1, 1)
 
-        # 128 channel blocks:
-        h = self.block2_1(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block2_2(h)
-        h = F.max_pooling_2d(h, ksize=2, stride=2)
+            self.conv3_1 = ChannelParallelConvolution2D(comm, 128, 256, 3, 1, 1)
+            self.conv3_2 = ChannelParallelConvolution2D(comm, 256, 256, 3, 1, 1)
+            self.conv3_3 = ChannelParallelConvolution2D(comm, 256, 256, 3, 1, 1)
 
-        # 256 channel blocks:
-        h = self.block3_1(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block3_2(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block3_3(h)
-        h = F.max_pooling_2d(h, ksize=2, stride=2)
+            self.conv4_1 = ChannelParallelConvolution2D(comm, 256, 512, 3, 1, 1)
+            self.conv4_2 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv4_3 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
 
-        # 512 channel blocks:
-        h = self.block4_1(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block4_2(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block4_3(h)
-        h = F.max_pooling_2d(h, ksize=2, stride=2)
+            self.conv5_1 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv5_2 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
+            self.conv5_3 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
 
-        # 512 channel blocks:
-        h = self.block5_1(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block5_2(h)
-        h = F.dropout(h, ratio=0.4)
-        h = self.block5_3(h)
-        h = F.max_pooling_2d(h, ksize=2, stride=2)
+            self.fc6 = L.Linear(None, 4096)
+            self.fc7 = L.Linear(4096, 4096)
+            self.fc8 = L.Linear(4096, 1000)
 
-        h = F.dropout(h, ratio=0.5)
-        h = self.fc1(h)
-        h = self.bn_fc1(h)
-        h = F.relu(h)
-        h = F.dropout(h, ratio=0.5)
-        h = self.fc2(h)
+    def forward(self, x):
+        h = F.relu(self.conv1_1(x))
+        h = F.relu(self.conv1_2(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv2_1(h))
+        h = F.relu(self.conv2_2(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv3_1(h))
+        h = F.relu(self.conv3_2(h))
+        h = F.relu(self.conv3_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv4_1(h))
+        h = F.relu(self.conv4_2(h))
+        h = F.relu(self.conv4_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.relu(self.conv5_1(h))
+        h = F.relu(self.conv5_2(h))
+        h = F.relu(self.conv5_3(h))
+        h = F.max_pooling_2d(h, 2, 2)
+
+        h = F.dropout(F.relu(self.fc6(h)))
+        h = F.dropout(F.relu(self.fc7(h)))
+        h = self.fc8(h)
 
         return h
+
+
+
+
+
+
+
+
+
+
+
+
+
+

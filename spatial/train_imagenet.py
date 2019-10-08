@@ -112,23 +112,24 @@ def main():
     # Datasets of worker 0 are evenly split and distributed to all workers.
     mean = np.load(MEAN_FILE)
 
-    # TODO Pass the same data to all ranks
     # All ranks load the data
     train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
     val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
 
     # Create a multinode iterator such that each rank gets the same batch
-
     if comm.rank != 0:
         train = chainermn.datasets.create_empty_dataset(train)
         val = chainermn.datasets.create_empty_dataset(val)
-
+    # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
         chainer.iterators.SerialIterator(train, args.batchsize), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
         chainer.iterators.SerialIterator(val, args.batchsize, repeat=False, shuffle=False), comm)
 
-    # Create a multi node optimizer to perform the all_reduce step
+    # We use a multinode optimizer here since we need to do an all reduce like in data parallelsim
+    # Essentially, each Process holds different weights
+    # Create a multi node optimizer from a standard Chainer optimizer.
+    # The multinode optimizer does the all reduce operation
     optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
 
@@ -136,23 +137,23 @@ def main():
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    # Create a multi node evaluator from an evaluator.
+    # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
-    evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
-    trainer.extend(evaluator, trigger=(1, 'epoch'))
+    # Since I need to measure timer per epoch, I avoid evaluation and just train the model
+    # By setting the evaluation epoch high, this will not be triggered when i am running few epochs
+    trainer.extend(evaluator, trigger=(20, 'epoch'))
 
     # Some display and output extensions are necessary only for one worker.
-    # (Otherwise, there would just be repeated outputs.)
+
     if comm.rank == 0:
-        # trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        # trainer.extend(extensions.PrintReport([
-        #     'epoch', 'elapsed_time', 'main/loss', 'validation/main/loss',
-        #     'main/accuracy', 'validation/main/accuracy',
-        # ]), trigger=(1, 'epoch'))
-        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
+        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'],
+        # 'epoch', filename='loss.png'))
+        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'],
+        # 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
 
     # TODO : Figure out how to send this report to a file

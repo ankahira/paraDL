@@ -12,6 +12,7 @@ import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
 from chainer.function_hooks import CupyMemoryProfileHook
+from chainer.function_hooks import TimerHook
 
 import chainermn
 
@@ -140,29 +141,26 @@ def main():
 
     # Some display and output extensions are necessary only for one worker.
     # (Otherwise, there would just be repeated outputs.)
-    # if comm.rank == 0:
-    #     # trainer.extend(extensions.DumpGraph('main/loss'))
-    #     trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
-    #     trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-    #     trainer.extend(extensions.PrintReport([
-    #         'epoch', 'elapsed_time', 'main/loss', 'validation/main/loss',
-    #         'main/accuracy', 'validation/main/accuracy',
-    #     ]), trigger=(1, 'epoch'))
-    #     trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-    #     trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-    #     # trainer.extend(extensions.ProgressBar())
+    if comm.rank == 0:
+        trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
+        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
+        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar())
 
     # TODO : Figure out how to send this report to a file
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    hook = CupyMemoryProfileHook()
+    hook = TimerHook()
     with hook:
         trainer.run()
 
     if comm.rank == 0:
-        hook.print_report(unit='MB')
+        hook.print_report()
 
 
 if __name__ == '__main__':
