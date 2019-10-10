@@ -88,10 +88,10 @@ def main():
     out = args.out
 
     # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
-    multiprocessing.set_start_method('forkserver')
-    p = multiprocessing.Process()
-    p.start()
-    p.join()
+    # multiprocessing.set_start_method('forkserver')
+    # p = multiprocessing.Process()
+    # p.start()
+    # p.join()
 
     # Prepare ChainerMN communicator.
     comm = chainermn.create_communicator("pure_nccl")
@@ -123,8 +123,8 @@ def main():
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultiprocessIterator(train, batch_size)
-    val_iter = chainer.iterators.MultiprocessIterator(val, batch_size, repeat=False)
+    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80)
+    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, repeat=False,  n_threads=80)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
@@ -146,8 +146,6 @@ def main():
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
-        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
 
     # TODO : Figure out how to send this report to a file

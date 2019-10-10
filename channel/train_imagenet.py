@@ -147,10 +147,6 @@ def main():
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
-        # trainer.extend(extensions.PlotReport(['main/loss', 'validation/main/loss'],
-        # 'epoch', filename='loss.png'))
-        # trainer.extend(extensions.PlotReport(['main/accuracy', 'validation/main/accuracy'],
-        # 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
 
     # TODO : Figure out how to send this report to a file
@@ -158,12 +154,7 @@ def main():
     if comm.rank == 0:
         print("Starting training .....")
 
-    hook = TimerHook()
-    with hook:
-        trainer.run()
-
-    if comm.rank == 0:
-        hook.print_report()
+    trainer.run()
 
 
 if __name__ == '__main__':
