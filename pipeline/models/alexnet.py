@@ -30,6 +30,7 @@ class AlexNet(chainer.Chain):
 
         h = F.copy(h, 1)
 
+
         h = F.relu(self.conv2(h))
         h = F.max_pooling_2d(h, ksize=3, stride=2)
 

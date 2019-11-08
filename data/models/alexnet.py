@@ -19,7 +19,7 @@ class AlexNet(chainer.Chain):
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)
 
-    def forward(self, x):
+    def forward(self, x, t):
         h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, ksize=3, stride=2)
 
@@ -36,7 +36,8 @@ class AlexNet(chainer.Chain):
         h = F.relu(self.fc7(h))
         h = F.dropout(h, ratio=0.5)
         h = self.fc8(h)
+        loss = F.softmax_cross_entropy(h, t)
+        return loss
 
-        return h
 
 

@@ -123,14 +123,11 @@ def main():
         val = chainermn.datasets.create_empty_dataset(val)
     # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.SerialIterator(train, args.batchsize), comm)
+        chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.SerialIterator(val, args.batchsize, repeat=False, shuffle=False), comm)
+        chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False), comm)
 
-    # From Nguyen "After finishing the backward computation of each layer, the processess also share their gradient
-    # of the input, hence all reduce operation. This can be done like the case of data parallelism using multi-node
-    # optimiser
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
 
     # Set up a trainer
@@ -146,11 +143,11 @@ def main():
     # Some display and output extensions are necessary only for one worker.
 
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
+        # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=1))
 
     # TODO : Figure out how to send this report to a file
 

@@ -1,14 +1,7 @@
 import chainer
 import chainer.functions as F
-import chainer.links as L
 
-
-# Local Imports
-from .channel_parallel_convolution import ChannelParallelConvolution2D
-
-import chainer
-import chainer.functions as F
-import chainer.links as L
+from chainermnx.links import ChannelParallelConvolution2D, ChannelParallelFC
 
 
 class VGG(chainer.Chain):
@@ -34,9 +27,9 @@ class VGG(chainer.Chain):
             self.conv5_2 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
             self.conv5_3 = ChannelParallelConvolution2D(comm, 512, 512, 3, 1, 1)
 
-            self.fc6 = L.Linear(None, 4096)
-            self.fc7 = L.Linear(4096, 4096)
-            self.fc8 = L.Linear(4096, 1000)
+            self.fc6 = ChannelParallelFC(self.comm, None, 4096)
+            self.fc7 = ChannelParallelFC(self.comm, 4096, 4096)
+            self.fc8 = ChannelParallelFC(self.comm, 4096, 1000)
 
     def forward(self, x):
         h = F.relu(self.conv1_1(x))

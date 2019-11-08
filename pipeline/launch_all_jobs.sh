@@ -2,8 +2,8 @@
 
 # Data Pipeline jobs
 
-qsub -g gaa50004 scripts/submit_alexnet.sh
-qsub -g gaa50004 scripts/submit_vgg.sh
-qsub -g gaa50004 scripts/submit_resnet.sh
-sleep 5
+qsub -g gaa50004 scripts/alexnet/submit_alexnet_32_4.sh
+qsub -g gaa50004 scripts/alexnet/submit_alexnet_64_4.sh
+qsub -g gaa50004 scripts/alexnet/submit_alexnet_128_4.sh
+
 

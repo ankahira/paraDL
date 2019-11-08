@@ -1,31 +1,47 @@
 import chainer
 import chainer.functions as F
 import chainer.links as L
-import numpy as np
+import chainermn
 
-from .spatial_convolution import SpatialConvolution2D
+import cupy as cp
+import numpy as np
+import gc
+
+from chainermnx.links import SpatialConvolution2DFinal
+
+from chainermnx.functions.halo_exchange import halo_exchange
+
+
+from chainer.initializers import Constant
 
 
 class AlexNet(chainer.Chain):
-
-    insize = 226
 
     def __init__(self, comm):
         super(AlexNet, self).__init__()
         self.comm = comm
         self.n_proc = self.comm.size
         with self.init_scope():
-            self.conv1 = SpatialConvolution2D(comm, None, 96, 11, stride=4)
-            self.conv2 = L.Convolution2D(None, 256, 5, pad=2)
-            self.conv3 = L.Convolution2D(None, 384, 3, pad=1)
-            self.conv4 = L.Convolution2D(None, 384, 3, pad=1)
-            self.conv5 = L.Convolution2D(None, 256, 3, pad=1)
-            self.fc6 = L.Linear(None, 4096)
-            self.fc7 = L.Linear(None, 4096)
-            self.fc8 = L.Linear(None, 1000)
+            cp.random.seed(0)
+            self.conv1 = L.Convolution2D(None, 1, 3, stride=1, pad=(1, 0), nobias=True, initialW=Constant(cp.random.rand()))
+            cp.random.seed(1)
+            self.conv2 = L.Convolution2D(None, 256, 5, pad=2, nobias=True)
+            cp.random.seed(2)
+            self.conv3 = L.Convolution2D(None, 384, 3, pad=1, nobias=True)
+            cp.random.seed(3)
+            self.conv4 = L.Convolution2D(None, 384, 3, pad=1, nobias=True)
+            cp.random.seed(4)
+            self.conv5 = L.Convolution2D(None, 256, 3, pad=1, nobias=True)
+            cp.random.seed(5)
+            self.fc6 = L.Linear(None, 4096, nobias=True)
+            cp.random.seed(6)
+            self.fc7 = L.Linear(None, 4096, nobias=True)
+            cp.random.seed(7)
+            self.fc8 = L.Linear(None, 1000, nobias=True)
 
-    def forward(self, x):
-        partions = np.array_split(x, self.n_proc, 3)
+    def forward(self, x, t):
+
+        partions = cp.array_split(x, self.n_proc, 3)
 
         if self.comm.rank == 0:
             x = partions[0]
@@ -38,24 +54,43 @@ class AlexNet(chainer.Chain):
         else:
             print("Rank does not exist")
 
-        h = F.relu(self.conv1(x))
+        h = halo_exchange(self.comm, x, k_size=3, index=1)
+        h = self.conv1(h)
 
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
-        h = F.relu(self.conv2(h))
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
+        hs = chainermn.functions.allgather(self.comm, h)
+        h = F.concat(hs, -1)
 
-        h = F.relu(self.conv3(h))
-        h = F.relu(self.conv4(h))
-        h = F.relu(self.conv5(h))
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
+        if self.comm.rank == 0:
 
-        # TODO Implement all reduce here
+            with open('spatial.txt', 'w') as f:
+                for i in range(h.shape[-2]):
+                    for j in range(h.shape[-1]):
+                        print("%01.5f" % h[:, :, i, j].array, file=f)
 
-        h = F.relu(self.fc6(h))
-        h = F.dropout(h, ratio=0.5)
-        h = F.relu(self.fc7(h))
-        h = F.dropout(h, ratio=0.5)
-        h = self.fc8(h)
-        return h
+        # h = F.max_pooling_2d(F.local_response_normalization(
+        #     F.relu(self.conv1(h))), 3, stride=2)
+        #
+        # h = halo_exchange(self.comm, h, k_size=5, index=2)
+        #
+        # h = F.max_pooling_2d(F.local_response_normalization(
+        #     F.relu(self.conv2(h))), 3, stride=2)
+        #
+        # h = halo_exchange(self.comm, h, k_size=3, index=3)
+        # h = F.relu(self.conv3(h))
+        # h = halo_exchange(self.comm, h, k_size=3, index=4)
+        # h = F.relu(self.conv4(h))
+        #
+        # h = halo_exchange(self.comm, h, k_size=3, index=5)
+        # h = F.max_pooling_2d(F.relu(self.conv5(h)), ksize=(1, 10), stride=2)
+        #
+        # hs = chainermn.functions.allgather(self.comm, h)
+        # h = F.concat(hs, -1)
+        #
+        # h = F.dropout(F.relu(self.fc6(h)))
+        # h = F.dropout(F.relu(self.fc7(h)))
+        # h = self.fc8(h)
+        # loss = F.softmax_cross_entropy(h, t)
+        # chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
+        # return loss
 
 

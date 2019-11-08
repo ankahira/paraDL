@@ -5,8 +5,8 @@ from chainer.training import extensions
 import argparse
 
 # Local imports
-from .models.cosmoflow import CosmoFlow
-from utilis.cosmoflow_data_prep import CosmoDataset
+from models.cosmoflow import CosmoFlow
+from utils.cosmoflow_data_prep import CosmoDataset
 
 import matplotlib
 
@@ -27,7 +27,7 @@ def main():
         device = -1
 
     # Input data and label
-    training_data = CosmoDataset("/home/acb10954wf/data")
+    training_data = CosmoDataset("/groups2/gaa50004/cosmoflow_data")
     # training_data = temp_data_prep()  # temp data
     print("Fetching data successful")
     print("Found %d training samples" % training_data.__len__())

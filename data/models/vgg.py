@@ -2,10 +2,6 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 
-import chainer
-import chainer.functions as F
-import chainer.links as L
-
 
 class VGG(chainer.Chain):
     def __init__(self):
@@ -33,7 +29,7 @@ class VGG(chainer.Chain):
             self.fc7 = L.Linear(4096, 4096)
             self.fc8 = L.Linear(4096, 1000)
 
-    def forward(self, x):
+    def forward(self, x, t):
         h = F.relu(self.conv1_1(x))
         h = F.relu(self.conv1_2(h))
         h = F.max_pooling_2d(h, 2, 2)
@@ -60,7 +56,8 @@ class VGG(chainer.Chain):
         h = F.dropout(F.relu(self.fc6(h)))
         h = F.dropout(F.relu(self.fc7(h)))
         h = self.fc8(h)
-        return h
+        loss = F.softmax_cross_entropy(h, t)
+        return loss
 
 
 

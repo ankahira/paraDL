@@ -6,7 +6,7 @@ import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
 
-from .spatial_convolution import SpatialConvolution2D
+from chainermnx.links import SpatialConvolution2D
 
 class BottleNeckA(chainer.Chain):
 

@@ -1,12 +1,12 @@
-import chainer as ch
+import chainer
 import chainermn
 from chainer import datasets, training
 from chainer.training import extensions
 import argparse
 
 # Local imports
-from .models.cosmoflow import CosmoFlow
-from utilis.cosmoflow_data_prep import CosmoDataset
+from models.cosmoflow import CosmoFlow
+from utils.cosmoflow_data_prep import CosmoDataset
 
 import matplotlib
 
@@ -14,38 +14,35 @@ matplotlib.use('Agg')
 
 
 def main():
-    parser = argparse.ArgumentParser(description='CosmoFlow Multi-Node Training')
-    parser.add_argument('--gpu', '-g', action='store_true', default=True, help='use GPU')
-    args = parser.parse_args()
 
     #  Create ChainerMN communicator.
-    if args.gpu:
-        comm = chainermn.create_communicator('hierarchical')
-        device = comm.rank
-    else:
-        comm = chainermn.create_communicator('naive')
-        device = -1
+
+    comm = chainermn.create_communicator('hierarchical')
+    device = comm.intra_rank
+    chainer.backends.cuda.get_device_from_id(device).use()
 
     # Input data and label
-    training_data = CosmoDataset("/home/acb10954wf/data")
+    training_data = CosmoDataset("/groups2/gaa50004/cosmoflow_data")
     # training_data = temp_data_prep()  # temp data
     print("Fetching data successful")
     print("Found %d training samples" % training_data.__len__())
-    train, test = datasets.split_dataset_random(
+    train, val = datasets.split_dataset_random(
         training_data, first_size=(int(training_data.__len__() * 0.80)))
-    train_iterator = ch.iterators.SerialIterator(train, 1)
-    vali_iterator = ch.iterators.SerialIterator(test, 1, repeat=False, shuffle=False)
+
+    if comm.rank != 0:
+        train = chainermn.datasets.create_empty_dataset(train)
+        val = chainermn.datasets.create_empty_dataset(val)
+
+    train_iterator = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.SerialIterator(train, 1), comm)
+    vali_iterator = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.SerialIterator(val, 1, repeat=False, shuffle=False), comm)
 
     model = CosmoFlow(comm)
 
-    print("Model Created successfully")
+    model.to_gpu()  # Copy the model to the GPU
 
-    if args.gpu:
-        # Make a specified GPU current
-        ch.backends.cuda.get_device_from_id(device).use()
-        model.to_gpu()  # Copy the model to the GPU
-
-    optimizer = ch.optimizers.Adam()
+    optimizer = chainer.optimizers.Adam()
 
     optimizer.setup(model)
     # Create the updater, using the optimizer

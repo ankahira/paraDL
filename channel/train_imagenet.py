@@ -123,9 +123,9 @@ def main():
         val = chainermn.datasets.create_empty_dataset(val)
     # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.SerialIterator(train, args.batchsize), comm)
+        chainer.iterators.MultithreadIterator(train, args.batchsize,  n_threads=40), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.SerialIterator(val, args.batchsize, repeat=False, shuffle=False), comm)
+        chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False,  n_threads=40), comm)
 
     # We dont use a multinode optimizer here as we dont do all reduce on final weights
     optimizer = chainer.optimizers.Adam()
@@ -147,7 +147,7 @@ def main():
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     # TODO : Figure out how to send this report to a file
 
