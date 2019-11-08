@@ -5,8 +5,9 @@ from chainer.training import extensions
 import argparse
 
 # Local imports
-from .models.cosmoflow import CosmoFlow
+from models.cosmoflow import CosmoFlow
 from utilis.cosmoflow_data_prep import CosmoDataset
+from utilis.extras import temp_data_prep
 
 import matplotlib
 
@@ -27,8 +28,8 @@ def main():
         device = -1
 
     # Input data and label
-    training_data = CosmoDataset("/home/acb10954wf/data")
-    # training_data = temp_data_prep()  # temp data
+    # training_data = CosmoDataset("/home/acb10954wf/data")
+    training_data = temp_data_prep()  # temp data
     print("Fetching data successful")
     print("Found %d training samples" % training_data.__len__())
     train, test = datasets.split_dataset_random(
@@ -36,7 +37,7 @@ def main():
     train_iterator = ch.iterators.SerialIterator(train, 1)
     vali_iterator = ch.iterators.SerialIterator(test, 1, repeat=False, shuffle=False)
 
-    model = CosmoFlow(comm)
+    model = CosmoFlow()
 
     print("Model Created successfully")
 
