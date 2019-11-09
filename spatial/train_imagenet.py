@@ -134,7 +134,7 @@ def main():
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (1, 'epoch')
+    val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
@@ -146,7 +146,7 @@ def main():
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        # trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)

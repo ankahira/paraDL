@@ -91,7 +91,7 @@ def main():
     batch_size = args.batchsize
     epochs = args.epochs
     out = args.out
-   
+
     # print('Device: {}'.format(device))
     # print('Dtype: {}'.format(chainer.config.dtype))
     print('Model: {} '.format(args.model))
@@ -108,8 +108,8 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 224)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 224, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
     # These iterators load the images with subprocesses running in parallel
     # to the training/validation.
     train_iter = chainer.iterators.MultiprocessIterator(
@@ -127,17 +127,12 @@ def main():
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
     val_interval = (100, 'epoch')
-    log_interval = (10, 'iteration')
+    log_interval = (1, 'iteration')
 
     trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
                                         device=device), trigger=val_interval)
 
     trainer.extend(extensions.DumpGraph('main/loss'))
-    trainer.extend(extensions.snapshot(), trigger=val_interval)
-    trainer.extend(extensions.snapshot_object(
-        model, 'model_iter_{.updater.iteration}'), trigger=val_interval)
-    # Be careful to pass the interval directly to LogReport
-    # (it determines when to emit log rather than when to read observations)
     trainer.extend(extensions.LogReport(trigger=log_interval))
     trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport(
@@ -145,12 +140,12 @@ def main():
          'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
     trainer.extend(extensions.ProgressBar(update_interval=1))
 
-    # trainer.run()
+    trainer.run()
 
-    hook = CupyMemoryProfileHook()
-    with hook:
-        trainer.run()
-    hook.print_report()
+    # hook = CupyMemoryProfileHook()
+    # with hook:
+       #  trainer.run()
+    # hook.print_report()
 
 
 if __name__ == '__main__':
