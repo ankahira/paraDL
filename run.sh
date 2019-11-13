@@ -1,15 +1,16 @@
 #!/bin/bash
 
 BATCH=$1
-EPOCH=$2
+EPOCH_Q=$2
+EPOCH_S=$3
 
 
 cd sequential
-python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH  --out="results/alexnet/4"
+python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH_Q  --out="results/alexnet/4"
 
 cd ../spatial
 
-mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH  --out="results/alexnet/4"
+mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH_S  --out="results/alexnet/4"
 
 cd ..
 

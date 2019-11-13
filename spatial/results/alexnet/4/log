@@ -1,10 +1,34 @@
 [
     {
-        "main/loss": 6.905738830566406,
-        "main/accuracy": 0.00110280339140445,
+        "main/loss": 0.13815510272979736,
+        "main/accuracy": 0.20000000298023224,
         "lr": 0.01,
         "epoch": 1,
-        "iteration": 10010,
-        "elapsed_time": 2922.5931718023494
+        "iteration": 1,
+        "elapsed_time": 16.78758170735091
+    },
+    {
+        "main/loss": 0.13815510272979736,
+        "main/accuracy": 0.20000000298023224,
+        "lr": 0.01,
+        "epoch": 2,
+        "iteration": 2,
+        "elapsed_time": 27.597214160487056
+    },
+    {
+        "main/loss": 6.907754898071289,
+        "main/accuracy": 0.20000000298023224,
+        "lr": 0.01,
+        "epoch": 3,
+        "iteration": 3,
+        "elapsed_time": 38.38398661278188
+    },
+    {
+        "main/loss": 6.907754898071289,
+        "main/accuracy": 0.20000000298023224,
+        "lr": 0.01,
+        "epoch": 4,
+        "iteration": 4,
+        "elapsed_time": 49.21791105531156
     }
 ]
