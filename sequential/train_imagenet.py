@@ -126,8 +126,8 @@ def main():
         train_iter, optimizer, converter=converter, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (100, 'epoch')
-    log_interval = (1, 'iteration')
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'epoch')
 
     trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
                                         device=device), trigger=val_interval)
@@ -141,11 +141,6 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=100))
 
     trainer.run()
-
-    # hook = CupyMemoryProfileHook()
-    # with hook:
-       #  trainer.run()
-    # hook.print_report()
 
 
 if __name__ == '__main__':

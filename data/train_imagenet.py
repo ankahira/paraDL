@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import random
 import numpy as np
+import multiprocessing
 
 import chainer.backends.cuda
 from chainer import training
@@ -82,10 +83,10 @@ def main():
     out = args.out
 
     # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
-    # multiprocessing.set_start_method('forkserver')
-    # p = multiprocessing.Process()
-    # p.start()
-    # p.join()
+    multiprocessing.set_start_method('forkserver')
+    p = multiprocessing.Process()
+    p.start()
+    p.join()
 
     # Prepare ChainerMN communicator.
     comm = chainermn.create_communicator("pure_nccl")
@@ -129,23 +130,25 @@ def main():
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'epoch')
+
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
-    trainer.extend(evaluator, trigger=(1, 'epoch'))
-    # Some display and output extensions are necessary only for one worker.
-    # (Otherwise, there would just be repeated outputs.)
+    trainer.extend(evaluator, trigger=val_interval)
+
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
-        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        trainer.extend(extensions.LogReport(trigger=log_interval))
+        trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
-            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='loss.png'))
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
 
     if comm.rank == 0:
