@@ -148,7 +148,6 @@ def main():
         print("Starting training .....")
 
     trainer.run()
-    model.predictor()
     if comm.rank == 0:
         serializers.save_npz('spatial_model.npz', model)
 
