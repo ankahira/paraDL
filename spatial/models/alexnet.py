@@ -40,7 +40,6 @@ class AlexNet(chainer.Chain):
             cp.random.seed(7)
             self.fc8 = L.Linear(None, 1000, nobias=True, initialW=Constant(cp.random.rand()))
 
-
     def forward(self, x, t):
         partions = cp.array_split(x, self.n_proc, -2)
 
@@ -72,11 +71,10 @@ class AlexNet(chainer.Chain):
         h = F.concat(hs, -2)
         if self.comm.rank == 0:
             with open('spatial_output.txt', 'w') as f:
-                  for i in range(h.shape[-2]):
-                      for j in range(h.shape[-1]):
-                          print("%01.3f" % h[0, 0, i, j].array, " ",  file=f, end="")
-                      print("\n", file=f)
-
+                for i in range(h.shape[-2]):
+                    for j in range(h.shape[-1]):
+                        print("%01.3f" % h[0, 0, i, j].array, " ",  file=f, end="")
+                    print("\n", file=f)
 
         h = F.dropout(F.relu(self.fc6(h)))
         h = F.dropout(F.relu(self.fc7(h)))
@@ -86,13 +84,5 @@ class AlexNet(chainer.Chain):
         chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
         return loss
 
-# if self.comm.rank == 0:
-       #     with open('final_x_after_conv.txt', 'w') as f:
-       #         for i in range(h.shape[-2]):
-       #             for j in range(h.shape[-1]):
-       #                 print("%01.3f" % h[0, 0, i, j].array, file=f, end="")
-       #             print("\n", file=f)
-
-        # h = F.max_pooling_2d(F.local_response_normalization(
 
 

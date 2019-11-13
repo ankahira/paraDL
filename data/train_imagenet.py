@@ -2,29 +2,21 @@
 
 from __future__ import print_function
 import argparse
-import multiprocessing
 import random
-import gc
-
 import numpy as np
-
 
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
-from chainer.function_hooks import CupyMemoryProfileHook
-from chainer.function_hooks import TimerHook
-
-import cupy
-import numpy
-
 import chainermn
-import chainer.links as L
+
+import matplotlib
 
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
+matplotlib.use('Agg')
 
 # Global Variables
 
@@ -145,15 +137,18 @@ def main():
     # Some display and output extensions are necessary only for one worker.
     # (Otherwise, there would just be repeated outputs.)
     if comm.rank == 0:
-        # trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.PlotReport(
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='loss.png'))
+        trainer.extend(extensions.PlotReport(
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='loss.png'))
+        trainer.extend(extensions.ProgressBar())
 
-    # TODO : Figure out how to send this report to a file
     if comm.rank == 0:
         print("Starting training .....")
 
