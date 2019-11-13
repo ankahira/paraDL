@@ -126,6 +126,9 @@ def main():
                                         device=device), trigger=val_interval)
 
     trainer.extend(extensions.DumpGraph('main/loss'))
+    trainer.extend(extensions.snapshot(), trigger=log_interval)
+    trainer.extend(extensions.snapshot_object(
+        model, 'model_epoch{.updater.epoch}'), trigger=log_interval)
     trainer.extend(extensions.LogReport(trigger=log_interval))
     trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport(
