@@ -25,19 +25,12 @@ from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
 
 #
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/1_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
-#
-#TRAIN = "/groups2/gaa50004/data/temp/train.txt"
-#VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-#TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
-#VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-#MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
-#
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 

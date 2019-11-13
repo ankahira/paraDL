@@ -2,18 +2,9 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 import chainermn
-import chainermnx.links as LX
 import cupy as cp
-import numpy as np
-import gc
-
-from chainermnx.links import SpatialConvolution2DFinal
-
-from chainermnx.functions.halo_exchange import halo_exchange
-# from chainermnx.functions.pooling_halo_exchange import halo_exchange_pooling
-
-
 from chainer.initializers import Constant
+from chainermnx.functions.halo_exchange import halo_exchange
 
 
 class AlexNet(chainer.Chain):
@@ -70,11 +61,13 @@ class AlexNet(chainer.Chain):
         hs = chainermn.functions.allgather(self.comm, h)
         h = F.concat(hs, -2)
         if self.comm.rank == 0:
-            with open('spatial_output.txt', 'w') as f:
-                for i in range(h.shape[-2]):
-                    for j in range(h.shape[-1]):
-                        print("%01.3f" % h[0, 0, i, j].array, " ",  file=f, end="")
-                    print("\n", file=f)
+            with open('spatial_output.txt', 'w') as file:
+                for b in range(h.shape[0]):
+                    for f in range(h.shape[1]):
+                        for i in range(h.shape[-2]):
+                            for j in range(h.shape[-1]):
+                                print("%01.3f" % h[b, f, i, j].array, " ",  file=file, end="")
+                            print("\n", file=file)
 
         h = F.dropout(F.relu(self.fc6(h)))
         h = F.dropout(F.relu(self.fc7(h)))

@@ -23,18 +23,11 @@ matplotlib.use('Agg')
 # Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/1_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
-
-
-#TRAIN = "/groups2/gaa50004/data/temp/train.txt"
-#VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-#TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
-#VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-#MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -126,7 +119,7 @@ def main():
         train_iter, optimizer, converter=converter, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (1, 'epoch')
+    val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
 
     trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
