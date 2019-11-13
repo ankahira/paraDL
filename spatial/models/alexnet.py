@@ -2,7 +2,7 @@ import chainer
 import chainer.functions as F
 import chainer.links as L
 import chainermn
-
+import chainermnx.links as LX
 import cupy as cp
 import numpy as np
 import gc
@@ -10,6 +10,7 @@ import gc
 from chainermnx.links import SpatialConvolution2DFinal
 
 from chainermnx.functions.halo_exchange import halo_exchange
+# from chainermnx.functions.pooling_halo_exchange import halo_exchange_pooling
 
 
 from chainer.initializers import Constant
@@ -55,36 +56,32 @@ class AlexNet(chainer.Chain):
             print("Rank does not exist")
 
         h = halo_exchange(self.comm, x, k_size=11, index=1)
-        # h = F.relu(h)
-        h = self.conv1(h)
-        # h = halo_exchange(self.comm, h, k_size=3, index=11)
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
-        # h = F.relu(h)
-
-        h =  halo_exchange(self.comm, h, k_size=5, index=2)
-        h = self.conv2(h)
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
-
+        h = F.relu(self.conv1(h))
+        h = F.max_pooling_2d(h, ksize=4, stride=4)
+        h = halo_exchange(self.comm, h, k_size=5, index=2)
+        h = F.relu(self.conv2(h))
+        h = F.max_pooling_2d(h, ksize=4, stride=4)
         h = halo_exchange(self.comm, h, k_size=3, index=3)
-        # h = F.relu(h)
-        h = self.conv3(h)
+        h = F.relu(self.conv3(h))
         h = halo_exchange(self.comm, h, k_size=3, index=4)
-        # h = F.relu(h)
-        h = self.conv4(h)
+        h = F.relu(self.conv4(h))
         h = halo_exchange(self.comm, h, k_size=3, index=5)
-        # h = F.relu(h)
-        h = self.conv5(h)
-        # h = halo_exchange(self.comm, h, k_size=3, index =55)
-        h = F.max_pooling_2d(h, ksize=3, stride=2)
-
+        h = F.relu(self.conv5(h))
+        h = F.max_pooling_2d(h, ksize=4, stride=4)
         hs = chainermn.functions.allgather(self.comm, h)
         h = F.concat(hs, -2)
-        print(h.shape)
-        if self.comm.rank ==0:
-            print(h[0, 0, :, :])
+        if self.comm.rank == 0:
+            with open('spatial_output.txt', 'w') as f:
+                  for i in range(h.shape[-2]):
+                      for j in range(h.shape[-1]):
+                          print("%01.3f" % h[0, 0, i, j].array, " ",  file=f, end="")
+                      print("\n", file=f)
+
+
         h = F.dropout(F.relu(self.fc6(h)))
         h = F.dropout(F.relu(self.fc7(h)))
         h = self.fc8(h)
+
         loss = F.softmax_cross_entropy(h, t)
         chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
         return loss

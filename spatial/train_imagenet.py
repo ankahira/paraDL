@@ -25,19 +25,19 @@ from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
 
 #
-# TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
-# VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-# TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
-# VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-# MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
-#
-#
-TRAIN = "/groups2/gaa50004/data/temp/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
+TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
+#
+#TRAIN = "/groups2/gaa50004/data/temp/train.txt"
+#VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
+#TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
+#VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
+#MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+#
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
@@ -113,8 +113,8 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # All ranks load the data
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 256)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 256, False)
 
     # Create a multinode iterator such that each rank gets the same batch
     if comm.rank != 0:
@@ -122,12 +122,12 @@ def main():
         val = chainermn.datasets.create_empty_dataset(val)
     # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40), comm)
+        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40, shuffle=False), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
         chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=40), comm)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
     optimizer.setup(model)
 
     # Set up a trainer
@@ -146,11 +146,11 @@ def main():
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-        trainer.extend(extensions.ProgressBar(update_interval=1))
+        trainer.extend(extensions.ProgressBar(update_interval=100))
 
     if comm.rank == 0:
         print("Starting training .....")

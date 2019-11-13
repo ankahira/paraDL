@@ -23,18 +23,18 @@ matplotlib.use('Agg')
 # Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-# TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
-# VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-# TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
-# VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-# MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
-
-
-TRAIN = "/groups2/gaa50004/data/temp/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
+TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+
+
+#TRAIN = "/groups2/gaa50004/data/temp/train.txt"
+#VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
+#TRAINING_ROOT = "/groups2/gaa50004/data/temp/"
+#VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
+#MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -108,17 +108,17 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 256)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 256, False)
     # These iterators load the images with subprocesses running in parallel
     # to the training/validation.
     train_iter = chainer.iterators.MultiprocessIterator(
-        train, batch_size)
+        train, batch_size, shuffle=False)
     val_iter = chainer.iterators.MultiprocessIterator(
         val, batch_size, repeat=False)
     converter = dataset.concat_examples
 
-    optimizer = chainer.optimizers.Adam()
+    optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
     optimizer.setup(model)
 
     # Set up a trainer
@@ -138,7 +138,7 @@ def main():
     trainer.extend(extensions.PrintReport(
         ['epoch', 'main/loss', 'validation/main/loss',
          'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-    trainer.extend(extensions.ProgressBar(update_interval=1))
+    trainer.extend(extensions.ProgressBar(update_interval=100))
 
     trainer.run()
 
