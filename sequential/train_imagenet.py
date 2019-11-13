@@ -2,14 +2,13 @@ import random
 import argparse
 import numpy as np
 import chainer
-import chainer.links as L
 from chainer import training
 from chainer.training import extensions
 import sys
 import numpy
 from chainer import dataset
-from chainer.function_hooks import CupyMemoryProfileHook
-import chainerx
+
+from chainer import serializers
 
 
 # Local Imports
@@ -126,9 +125,6 @@ def main():
                                         device=device), trigger=val_interval)
 
     trainer.extend(extensions.DumpGraph('main/loss'))
-    # trainer.extend(extensions.snapshot(), trigger=log_interval)
-    trainer.extend(extensions.snapshot_object(
-        model, 'model_epoch{.updater.epoch}'), trigger=log_interval)
     trainer.extend(extensions.LogReport(trigger=log_interval))
     trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport(
@@ -137,6 +133,7 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=100))
 
     trainer.run()
+    serializers.save_npz('sequential.model', model)
 
 
 if __name__ == '__main__':
