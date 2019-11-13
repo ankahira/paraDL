@@ -146,7 +146,7 @@ def main():
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
         trainer.extend(extensions.PlotReport(
-            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='loss.png'))
+            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
