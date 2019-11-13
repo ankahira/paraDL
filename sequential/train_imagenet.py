@@ -133,7 +133,7 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=100))
 
     trainer.run()
-    serializers.save_npz('sequential.model', model)
+    serializers.save_npz('sequential_model.npz', model)
 
 
 if __name__ == '__main__':

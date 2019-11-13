@@ -14,4 +14,4 @@ mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --e
 
 cd ..
 
-diff spatial/spatial_output.txt sequential/sequential_output.txt
+

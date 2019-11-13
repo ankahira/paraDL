@@ -36,13 +36,7 @@ class AlexNet(chainer.Chain):
         h = F.relu(self.conv4(h))
         h = F.relu(self.conv5(h))
         h = F.max_pooling_2d(h, ksize=4, stride=4)
-        with open('sequential_output.txt', 'w') as file:
-            for b in range(h.shape[0]):
-                for f in range(h.shape[1]):
-                    for i in range(h.shape[-2]):
-                        for j in range(h.shape[-1]):
-                            print("%01.3f" % h[b, f, i, j].array, " ", file=file, end="")
-                        print("\n", file=file)
+
         h = F.dropout(F.relu(self.fc6(h)))
         h = F.dropout(F.relu(self.fc7(h)))
         h = self.fc8(h)
@@ -52,3 +46,10 @@ class AlexNet(chainer.Chain):
         return loss
 
 
+ # with open('sequential_output.txt', 'w') as file:
+ #            for b in range(h.shape[0]):
+ #                for f in range(h.shape[1]):
+ #                    for i in range(h.shape[-2]):
+ #                        for j in range(h.shape[-1]):
+ #                            print("%01.3f" % h[b, f, i, j].array, " ", file=file, end="")
+ #                        print("\n", file=file)
