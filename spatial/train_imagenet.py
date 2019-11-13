@@ -138,7 +138,7 @@ def main():
     # (Otherwise, there would just be repeated outputs.)
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.snapshot(), trigger=log_interval)
+        # trainer.extend(extensions.snapshot(), trigger=log_interval)
         trainer.extend(extensions.snapshot_object(
             model, 'model_epoch{.updater.epoch}'), trigger=log_interval)
         trainer.extend(extensions.LogReport(trigger=log_interval))
