@@ -5,7 +5,7 @@
         "lr": 0.01,
         "epoch": 1,
         "iteration": 1,
-        "elapsed_time": 13.805787545628846
+        "elapsed_time": 5.034427018836141
     },
     {
         "main/loss": 6.907754898071289,
@@ -13,7 +13,7 @@
         "lr": 0.01,
         "epoch": 2,
         "iteration": 2,
-        "elapsed_time": 24.45516226347536
+        "elapsed_time": 5.433810752816498
     },
     {
         "main/loss": 6.907754898071289,
@@ -21,6 +21,6 @@
         "lr": 0.01,
         "epoch": 3,
         "iteration": 3,
-        "elapsed_time": 34.927860480733216
+        "elapsed_time": 5.799340076744556
     }
 ]
