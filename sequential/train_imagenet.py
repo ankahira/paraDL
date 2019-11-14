@@ -22,7 +22,7 @@ matplotlib.use('Agg')
 # Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/50_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -84,8 +84,6 @@ def main():
     epochs = args.epochs
     out = args.out
 
-    # print('Device: {}'.format(device))
-    # print('Dtype: {}'.format(chainer.config.dtype))
     print('Model: {} '.format(args.model))
     print('Minibatch-size: {}'.format(batch_size))
     print('Epochs: {}'.format(epochs))
@@ -100,10 +98,9 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 256)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 256, False)
-    # These iterators load the images with subprocesses running in parallel
-    # to the training/validation.
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
+
     train_iter = chainer.iterators.MultiprocessIterator(
         train, batch_size, shuffle=False)
     val_iter = chainer.iterators.MultiprocessIterator(
@@ -130,7 +127,9 @@ def main():
     trainer.extend(extensions.PrintReport(
         ['epoch', 'main/loss', 'validation/main/loss',
          'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-    trainer.extend(extensions.ProgressBar(update_interval=100))
+    trainer.extend(extensions.ProgressBar())
+
+    print("Starting training")
 
     trainer.run()
     serializers.save_npz('sequential_model.npz', model)

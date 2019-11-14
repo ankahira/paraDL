@@ -18,13 +18,10 @@ import chainermn
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
-
-
-# Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-#
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/50_image_train.txt"
+# Global
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -105,8 +102,8 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # All ranks load the data
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 256)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 256, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
 
     # Create a multinode iterator such that each rank gets the same batch
     if comm.rank != 0:
@@ -133,8 +130,6 @@ def main():
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
     trainer.extend(evaluator, trigger=val_interval)
-    # Some display and output extensions are necessary only for one worker.
-    # (Otherwise, there would just be repeated outputs.)
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
@@ -142,7 +137,7 @@ def main():
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-        trainer.extend(extensions.ProgressBar(update_interval=100))
+        trainer.extend(extensions.ProgressBar())
 
     if comm.rank == 0:
         print("Starting training .....")

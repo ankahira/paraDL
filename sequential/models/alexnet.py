@@ -45,11 +45,3 @@ class AlexNet(chainer.Chain):
         chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
         return loss
 
-
- # with open('sequential_output.txt', 'w') as file:
- #            for b in range(h.shape[0]):
- #                for f in range(h.shape[1]):
- #                    for i in range(h.shape[-2]):
- #                        for j in range(h.shape[-1]):
- #                            print("%01.3f" % h[b, f, i, j].array, " ", file=file, end="")
- #                        print("\n", file=file)
