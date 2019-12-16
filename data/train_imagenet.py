@@ -21,7 +21,7 @@ matplotlib.use('Agg')
 
 # Global Variables
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txtz"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"

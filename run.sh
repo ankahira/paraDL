@@ -4,19 +4,16 @@ BATCH=$1
 EPOCH_SQ=$2
 EPOCH_SP=$3
 
-
-( cd sequential && python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH_SQ  --out="results/alexnet/debug" )
+#
+# ( cd sequential && python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH_SQ  --out="results/alexnet/debug" )
 
 
 ( cd spatial && mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=$BATCH  --epochs=$EPOCH_SP  --out="results/alexnet/debug")
 
-echo "Ouput verification "
+# echo "Diff forward prop outputs"
 
-diff sequential/sequential_output.txt spatial/spatial_output.txt
+# diff sequential/sequential_forward_prop.txt spatial/spatial_forward_prop.txt
 
-echo "Weights verification"
-
-
-python verification.py
+#python verification.py
 
 

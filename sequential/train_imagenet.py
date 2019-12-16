@@ -12,7 +12,7 @@ from chainer import serializers
 
 
 # Local Imports
-from models.alexnet import AlexNet
+from models.temp_alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 
@@ -22,7 +22,7 @@ matplotlib.use('Agg')
 # Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/1_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -98,8 +98,8 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 16, random=False)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 16, False)
 
     train_iter = chainer.iterators.MultiprocessIterator(
         train, batch_size, shuffle=False)
@@ -118,8 +118,8 @@ def main():
     val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
 
-    trainer.extend(extensions.Evaluator(val_iter, model, converter=converter,
-                                        device=device), trigger=val_interval)
+    evaluator = extensions.Evaluator(val_iter, model, device=device)
+    trainer.extend(evaluator, trigger=val_interval)
 
     trainer.extend(extensions.DumpGraph('main/loss'))
     trainer.extend(extensions.LogReport(trigger=log_interval))

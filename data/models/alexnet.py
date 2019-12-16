@@ -4,9 +4,6 @@ import chainer.links as L
 
 
 class AlexNet(chainer.Chain):
-
-    insize = 227
-
     def __init__(self):
         super(AlexNet, self).__init__()
         with self.init_scope():

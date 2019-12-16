@@ -6,6 +6,7 @@ import argparse
 import random
 
 import numpy as np
+import cupy as cp
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
@@ -15,13 +16,15 @@ from chainer import serializers
 import chainermn
 
 # Local Imports
-from models.alexnet import AlexNet
+from models.temp_alexnet import AlexNet
+# from models.alexnet import AlexNet
+
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/1_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -97,13 +100,14 @@ def main():
 
     # model = L.Classifier(models[args.model]())
     model = models[args.model](comm)
-    chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
-    model.to_gpu()
+    # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
+    chainer.cuda.get_device_from_id(device).use()
+    model.to_gpu(device)
     mean = np.load(MEAN_FILE)
 
     # All ranks load the data
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 32)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 32, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 16)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 16, False)
 
     # Create a multinode iterator such that each rank gets the same batch
     if comm.rank != 0:
@@ -111,12 +115,17 @@ def main():
         val = chainermn.datasets.create_empty_dataset(val)
     # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40, shuffle=False), comm)
+        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40, shuffle=True), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
         chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=40), comm)
 
+    # Split and distribute the dataset. Only worker 0 loads the whole dataset.
+    # Datasets of worker 0 are evenly split and distributed to all workers.
+
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
+    # optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
+
     optimizer.setup(model)
 
     # Set up a trainer
@@ -136,15 +145,18 @@ def main():
         trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
-             'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
+             'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        trainer.extend(extensions.PlotReport(
+            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        trainer.extend(extensions.PlotReport(
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar())
 
     if comm.rank == 0:
         print("Starting training .....")
 
     trainer.run()
-    if comm.rank == 0:
-        serializers.save_npz('spatial_model.npz', model)
+    # serializers.save_npz('spatial_model_rank_{}.npz'.format(comm.rank), model)
 
 
 if __name__ == '__main__':
