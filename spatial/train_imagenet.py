@@ -87,7 +87,9 @@ def main():
     out = args.out
 
     # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("pure_nccl")
+    comm = chainermn.create_communicator("spatial_nccl")
+    new_comm = comm.split(0)
+    print(new_comm.rank)
     device = comm.intra_rank
 
     if comm.rank == 0:

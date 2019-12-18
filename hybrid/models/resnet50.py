@@ -1,10 +1,12 @@
+# Original author: yasunorikudo
+# (https://github.com/yasunorikudo/chainer-ResNet)
+
 import chainer
 import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
 
-from .filter_parallel_convolution import FilterParallelConvolution2D
-
+from chainermnx.links import SpatialConvolution2D
 
 class BottleNeckA(chainer.Chain):
 
@@ -14,13 +16,13 @@ class BottleNeckA(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = FilterParallelConvolution2D(self.comm, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv1 = SpatialConvolution2D(self.comm, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = FilterParallelConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = SpatialConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = FilterParallelConvolution2D(self.comm, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = SpatialConvolution2D(self.comm, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(out_size)
-            self.conv4 = FilterParallelConvolution2D(self.comm, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv4 = SpatialConvolution2D(self.comm, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
@@ -40,11 +42,11 @@ class BottleNeckB(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = FilterParallelConvolution2D(self.comm, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv1 = SpatialConvolution2D(self.comm, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = FilterParallelConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = SpatialConvolution2D(self.comm, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = FilterParallelConvolution2D(self.comm, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = SpatialConvolution2D(self.comm, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(in_size)
 
     def __call__(self, x):
@@ -78,7 +80,7 @@ class ResNet50(chainer.Chain):
         self.comm = comm
         super(ResNet50, self).__init__()
         with self.init_scope():
-            self.conv1 = FilterParallelConvolution2D(self.comm, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.conv1 = SpatialConvolution2D(self.comm, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
             self.bn1 = L.BatchNormalization(64)
             self.res2 = Block(self.comm, 3, 64, 64, 256, 1)
             self.res3 = Block(self.comm, 4, 256, 128, 512)
@@ -96,5 +98,4 @@ class ResNet50(chainer.Chain):
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
         return h
-
 
