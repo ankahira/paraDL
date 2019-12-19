@@ -14,11 +14,10 @@ from chainer import serializers
 
 
 import chainermn
+import chainermnx
 
 # Local Imports
 from models.temp_alexnet import AlexNet
-# from models.alexnet import AlexNet
-
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
@@ -67,6 +66,23 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
         return image, label
 
 
+def split_comm(comm):
+    """Create a local communicator from the main communicator
+    :arg: comm
+    :return local comm
+    """
+    hs = comm.mpi_comm.allgather(os.uname()[1])
+    host_list = []
+    for h in hs:
+        if h not in host_list:
+            host_list.append(h)
+
+    hosts = {k: v for v, k in enumerate(host_list)}
+
+    small_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
+    return small_comm
+
+
 def main():
     chainer.disable_experimental_feature_warning = True
     models = {
@@ -87,9 +103,7 @@ def main():
     out = args.out
 
     # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("spatial_nccl")
-    new_comm = comm.split(0)
-    print(new_comm.rank)
+    comm = chainermnx.create_communicator("spatial_nccl")
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -125,7 +139,7 @@ def main():
     # Datasets of worker 0 are evenly split and distributed to all workers.
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
+    optimizer = chainermnx.create_spatial_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
     # optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
 
     optimizer.setup(model)
