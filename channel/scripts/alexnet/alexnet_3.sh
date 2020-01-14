@@ -16,6 +16,7 @@ mpirun  -n 3  python train_imagenet.py  --model=alexnet  --batchsize=512  --epoc
 
 
 
+mpirun  -n 3  python train_imagenet.py  --model=alexnet  --batchsize=512  --epochs=1  --out="results/alexnet/debug"
 
 
 

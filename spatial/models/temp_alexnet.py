@@ -4,12 +4,9 @@ import chainer.functions as F
 import chainermnx.functions as FX
 import chainer.links as L
 import chainermnx.links as LX
-import chainermn
 import cupy as cp
-from chainer.initializers import Constant
 from chainermnx.functions.halo_exchange import halo_exchange
-from chainermnx.functions.checker import checker
-from chainer import serializers
+from chainer.initializers import Constant
 
 
 class AlexNet(chainer.Chain):
@@ -22,10 +19,8 @@ class AlexNet(chainer.Chain):
             self.conv1 = LX.Convolution2D(self.comm, 1, None, 3, 3, pad=(0, 1), nobias=True)
             self.conv2 = LX.Convolution2D(self.comm, 2, None, 3, 3, pad=(0, 1), nobias=True)
             self.conv3 = LX.Convolution2D(self.comm, 3, None, 3, 3, pad=(0, 1), nobias=True)
+            self.conv4 = L.Convolution2D(None, 3, 3, pad=1)
 
-            self.conv4 = L.Convolution2D(None, 3, 3, pad=1, nobias=True)
-            self.conv5 = L.Convolution2D(None, 3, 3, pad=(0, 1), nobias=True, initialW=Constant(cp.random.rand()))
-            self.conv6 = L.Convolution2D(None, 3, 3, pad=(0, 1), nobias=True, initialW=Constant(cp.random.rand()))
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)
@@ -51,6 +46,7 @@ class AlexNet(chainer.Chain):
         h = F.relu(self.conv3(h))
         h = chainermnx.functions.allgather(self.comm, h)
         h = FX.concat(h, -2)
+
         h = F.relu(self.conv4(h))
         h = F.relu(self.fc6(h))
         h = F.relu(self.fc7(h))

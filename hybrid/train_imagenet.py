@@ -16,8 +16,7 @@ import chainermnx
 import chainermn
 
 # Local Imports
-from models.temp_alexnet import AlexNet
-# from models.alexnet import AlexNet
+from models.alexnet import AlexNet
 
 from models.vgg import VGG
 from models.resnet50 import ResNet50
@@ -84,6 +83,23 @@ def split_comm(comm):
     return small_comm
 
 
+def create_data_comm(comm):
+    """Create a data communicator from the main communicator
+    :arg: comm
+    :return local comm
+    """
+    hs = comm.mpi_comm.allgather(os.uname()[1])
+    host_list = []
+    for h in hs:
+        if h not in host_list:
+            host_list.append(h)
+
+    hosts = {k: v for v, k in enumerate(host_list)}
+
+    small_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
+    return small_comm
+
+
 def main():
     chainer.disable_experimental_feature_warning = True
     models = {
@@ -118,34 +134,41 @@ def main():
         print('==========================================')
 
     # model = L.Classifier(models[args.model]())
-    model = models[args.model](comm)
+    model = models[args.model](local_comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
     model.to_gpu(device)
     mean = np.load(MEAN_FILE)
 
     # All ranks load the data
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 16)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 16, False)
 
-    # Create a multinode iterator such that each rank gets the same batch
-    if comm.rank != 0:
-        train = chainermn.datasets.create_empty_dataset(train)
-        val = chainermn.datasets.create_empty_dataset(val)
-    # Same dataset in all nodes
-    train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40, shuffle=True), comm)
-    val_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=40), comm)
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
+    # This is the tricky part
+    mean = np.load(MEAN_FILE)
+
+    if comm.rank == 0:
+        train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
+        val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
+    else:
+        train = None
+        val = None
+    # model inputs come from datasets, and each process takes different mini-batches
+    train_iter = chainermn.scatter_dataset(train, comm, shuffle=True)
+
+    train_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.MultithreadIterator(train_iter, args.batchsize, n_threads=40, shuffle=True), comm)
+
+
+
+    val_iter = chainermn.scatter_dataset(val, comm, shuffle=True)
+
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     # For Hybrid, we modify the multinode optimizer such that it takes two communicators. The first main communicator
     # is for global all reduce and the second one is to do a local all reduce
     optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
-    # optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
 
     optimizer.setup(model)
 

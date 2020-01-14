@@ -3,8 +3,7 @@ import chainer.functions as F
 import chainer.links as L
 
 # Local Imports
-from chainermnx.links.filter_parallel_convolution_2d import FilterParallelConvolution2D
-from chainermnx.links.filter_parallel_linear import FilterParallelFC
+from chainermnx.links import FilterParallelConvolution2D,  FilterParallelFC
 
 
 class AlexNet(chainer.Chain):
@@ -20,7 +19,7 @@ class AlexNet(chainer.Chain):
             self.fc7 = FilterParallelFC(comm, None, 4096)
             self.fc8 = FilterParallelFC(comm, None, 1000)
 
-    def forward(self, x):
+    def forward(self, x, t):
         h = F.relu(self.conv1(x))
         h = F.max_pooling_2d(h, ksize=3, stride=2)
         h = F.relu(self.conv2(h))
@@ -35,4 +34,6 @@ class AlexNet(chainer.Chain):
         h = F.relu(self.fc7(h))
         h = F.dropout(h, ratio=0.5)
         h = self.fc8(h)
-        return h
+        loss = F.softmax_cross_entropy(h, t)
+        chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
+        return loss

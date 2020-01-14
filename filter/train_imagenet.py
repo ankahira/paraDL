@@ -11,8 +11,7 @@ import numpy as np
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
-from chainer.function_hooks import CupyMemoryProfileHook
-from chainer.function_hooks import TimerHook
+from chainer.function_hooks import TimerHook, CupyMemoryProfileHook
 
 import chainermn
 
@@ -143,7 +142,7 @@ def main():
     # Some display and output extensions are necessary only for one worker.
 
     if comm.rank == 0:
-        # trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
@@ -154,7 +153,7 @@ def main():
     if comm.rank == 0:
         print("Starting training .....")
 
-    hook = TimerHook()
+    hook = CupyMemoryProfileHook()
     with hook:
         trainer.run()
 

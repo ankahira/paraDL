@@ -11,8 +11,10 @@ import numpy as np
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
+
 from chainer.function_hooks import CupyMemoryProfileHook
-from chainer.function_hooks import TimerHook
+
+
 
 import chainermn
 
@@ -104,12 +106,12 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](comm))
+    model = models[args.model](comm)
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
 
-    # Split and distribute the dataset. Only worker 0 loads the whole dataset.
+    # Split and distribute the dataset. Only worker 0 lo1898687ads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
     mean = np.load(MEAN_FILE)
 
@@ -133,28 +135,43 @@ def main():
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
+
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'epoch')
 
     # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     # Since I need to measure timer per epoch, I avoid evaluation and just train the model
     # By setting the evaluation epoch high, this will not be triggered when i am running few epochs
-    trainer.extend(evaluator, trigger=(20, 'epoch'))
+    trainer.extend(evaluator, trigger=val_interval)
 
     # Some display and output extensions are necessary only for one worker.
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
+        trainer.extend(extensions.LogReport(trigger=log_interval))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
         trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.PrintReport(
+            ['epoch', 'main/loss', 'validation/main/loss',
+             'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        trainer.extend(extensions.PlotReport(
+            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        trainer.extend(extensions.PlotReport(
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar())
 
     # TODO : Figure out how to send this report to a file
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    trainer.run()
+    hook = CupyMemoryProfileHook()
+    with hook:
+        trainer.run()
+
+    if comm.rank == 0:
+        hook.print_report()
 
 
 if __name__ == '__main__':

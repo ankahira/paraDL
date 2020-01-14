@@ -1,8 +1,8 @@
 #!/bin/bash
 #$ -cwd
 #$ -l rt_F=1
-#$ -l h_rt=72:00:00
-#$ -N vgg_4
+#$ -l h_rt=30:00:00
+#$ -N alexnet_4
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y
 
@@ -12,8 +12,8 @@ conda activate
 
 source ~/.bash_profile
 
+mpiexec -n 4   python train_imagenet.py  --model=alexnet  --batchsize=1024  --epochs=1  --out="results/alexnet/debug"
 
-mpirun  -n 4  python train_imagenet.py  --model=vgg  --batchsize=4  --epochs=1  --out="results/vgg/4"
 
 
 

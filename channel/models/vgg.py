@@ -31,7 +31,7 @@ class VGG(chainer.Chain):
             self.fc7 = ChannelParallelFC(self.comm, 4096, 4096)
             self.fc8 = ChannelParallelFC(self.comm, 4096, 1000)
 
-    def forward(self, x):
+    def forward(self, x, t):
         h = F.relu(self.conv1_1(x))
         h = F.relu(self.conv1_2(h))
         h = F.max_pooling_2d(h, 2, 2)
@@ -59,7 +59,10 @@ class VGG(chainer.Chain):
         h = F.dropout(F.relu(self.fc7(h)))
         h = self.fc8(h)
 
-        return h
+        loss = F.softmax_cross_entropy(h, t)
+        chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
+        return loss
+
 
 
 

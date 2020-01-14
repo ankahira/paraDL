@@ -86,7 +86,7 @@ class ResNet50(chainer.Chain):
             self.res5 = Block(self.comm, 3, 1024, 512, 2048)
             self.fc = ChannelParallelFC(self.comm, 2048, 1000)
 
-    def __call__(self, x):
+    def __call__(self, x, t):
         h = self.bn1(self.conv1(x))
         h = F.max_pooling_2d(F.relu(h), 3, stride=2)
         h = self.res2(h)
@@ -95,5 +95,8 @@ class ResNet50(chainer.Chain):
         h = self.res5(h)
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
-        return h
+        loss = F.softmax_cross_entropy(h, t)
+        chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
+        return loss
+
 

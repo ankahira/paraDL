@@ -6,24 +6,25 @@ import argparse
 import random
 
 import numpy as np
-import cupy as cp
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
 from chainer import serializers
-
+from chainer.function_hooks import CupyMemoryProfileHook
+import chainer.links as L
+import cupy as cp
 
 import chainermn
 import chainermnx
 
 # Local Imports
-from models.temp_alexnet import AlexNet
+from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -32,7 +33,7 @@ MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
-    def __init__(self, path, root, mean, crop_size, random=False):
+    def __init__(self, path, root, mean, crop_size, random=True):
         self.base = chainer.datasets.LabeledImageDataset(path, root)
         self.mean = mean.astype(np.float32)
         self.crop_size = crop_size
@@ -66,24 +67,14 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
         return image, label
 
 
-def split_comm(comm):
-    """Create a local communicator from the main communicator
-    :arg: comm
-    :return local comm
-    """
-    hs = comm.mpi_comm.allgather(os.uname()[1])
-    host_list = []
-    for h in hs:
-        if h not in host_list:
-            host_list.append(h)
-
-    hosts = {k: v for v, k in enumerate(host_list)}
-
-    small_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
-    return small_comm
-
-
 def main():
+
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
+
     chainer.disable_experimental_feature_warning = True
     models = {
         'alexnet': AlexNet,
@@ -114,16 +105,16 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    # model = L.Classifier(models[args.model]())
-    model = models[args.model](comm)
+    model = L.Classifier(models[args.model](comm))
+    # model = models[args.model](comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
     model.to_gpu(device)
     mean = np.load(MEAN_FILE)
 
     # All ranks load the data
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 16)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 16, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 224)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 224, False)
 
     # Create a multinode iterator such that each rank gets the same batch
     if comm.rank != 0:
@@ -131,24 +122,22 @@ def main():
         val = chainermn.datasets.create_empty_dataset(val)
     # Same dataset in all nodes
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=40, shuffle=True), comm)
+        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=20, shuffle=True), comm)
     val_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=40), comm)
+        chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=20), comm)
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermnx.create_spatial_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
-    # optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
-
+    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (100, 'epoch')
+    val_interval = (1, 'epoch')
     log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
@@ -166,13 +155,17 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    trainer.run()
-    # serializers.save_npz('spatial_model_rank_{}.npz'.format(comm.rank), model)
+    hook = CupyMemoryProfileHook()
+    with hook:
+        trainer.run()
+
+    if comm.rank == 0:
+        hook.print_report()
 
 
 if __name__ == '__main__':

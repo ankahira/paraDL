@@ -4,7 +4,8 @@ import chainer.links as L
 
 
 # Local Imports
-from .filter_parallel_convolution import FilterParallelConvolution2D,  FilterParallelFC
+from chainermnx.links import FilterParallelConvolution2D,  FilterParallelFC
+
 
 import chainer
 import chainer.functions as F

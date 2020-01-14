@@ -3,7 +3,7 @@ import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
 
-from .filter_parallel_convolution import FilterParallelConvolution2D, FilterParallelFC
+from chainermnx.links import FilterParallelConvolution2D,  FilterParallelFC
 
 
 class BottleNeckA(chainer.Chain):

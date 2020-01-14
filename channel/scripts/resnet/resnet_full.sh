@@ -2,7 +2,7 @@
 #$ -cwd
 #$ -l rt_F=1
 #$ -l h_rt=72:00:00
-#$ -N vgg_4
+#$ -N resnet_full
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y
 
@@ -12,8 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-
-mpirun  -n 4  python train_imagenet.py  --model=vgg  --batchsize=4  --epochs=1  --out="results/vgg/4"
+mpirun  -n 3  python train_imagenet.py  --model=resnet  --batchsize=16  --epochs=70  --out="results/resnet/full"
 
 
 
