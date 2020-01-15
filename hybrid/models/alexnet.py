@@ -24,9 +24,6 @@ class AlexNet(chainer.Chain):
             self.fc8 = L.Linear(None, 1000)
 
     def forward(self, x, t):
-
-
-
         partions = cp.array_split(x, self.comm.size, -2)
         if self.comm.rank == 0:
             x = partions[0]
@@ -38,9 +35,6 @@ class AlexNet(chainer.Chain):
             x = partions[3]
         else:
             print("Rank does not exist")
-
-
-        print(x[0,0,0,0])
 
         h = FX.halo_exchange(self.comm, x, k_size=5, index=1, pad=0)
         h = F.relu(self.conv1(h))

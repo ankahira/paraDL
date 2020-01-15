@@ -23,7 +23,7 @@ from models.resnet50 import ResNet50
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -66,7 +66,7 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
         return image, label
 
 
-def split_comm(comm):
+def create_local_comm(comm):
     """Create a local communicator from the main communicator
     :arg: comm
     :return local comm
@@ -79,28 +79,31 @@ def split_comm(comm):
 
     hosts = {k: v for v, k in enumerate(host_list)}
 
-    small_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
-    return small_comm
+    local_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
+    return local_comm
 
 
 def create_data_comm(comm):
     """Create a data communicator from the main communicator
+
     :arg: comm
-    :return local comm
+    :return data comm
     """
-    hs = comm.mpi_comm.allgather(os.uname()[1])
-    host_list = []
-    for h in hs:
-        if h not in host_list:
-            host_list.append(h)
-
-    hosts = {k: v for v, k in enumerate(host_list)}
-
-    small_comm = comm.split(hosts[os.uname()[1]], comm.intra_rank)
-    return small_comm
+    if comm.rank % 4 == 0:
+        colour = 0
+    else:
+        colour = 1
+    data_comm = comm.split(colour, comm.rank)
+    return data_comm
 
 
 def main():
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
+
     chainer.disable_experimental_feature_warning = True
     models = {
         'alexnet': AlexNet,
@@ -118,11 +121,17 @@ def main():
     batch_size = args.batchsize
     epochs = args.epochs
     out = args.out
-
-    # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("pure_nccl")
-    local_comm = split_comm(comm)
-
+    """
+    Hybrid requires three communicators. 
+    The main communicator for all reduce. this is passed to optimiser 
+    The local comm that is needed to split the image into 4. This is passed to the model
+    The data comm that is needed to ensure each Node loads same data. 
+    """
+    # Prepare communicators  communicator.
+    comm = chainermnx.create_communicator("spatial_hybrid_nccl")
+    # comm = chainermnx.create_communicator("spatial_nccl")
+    local_comm = create_local_comm(comm)
+    data_comm = create_data_comm(comm)
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -138,38 +147,44 @@ def main():
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
     model.to_gpu(device)
+
+    """
+    Data loading is the fundamental part of Hybrid. 
+    We want to combine data parallelism and spatial. 
+    So load scatter data to GPUs, but ensure that GPUs in the same node get exactly the same data. 
+    
+    """
     mean = np.load(MEAN_FILE)
 
-    # All ranks load the data
-
-
-    # Split and distribute the dataset. Only worker 0 loads the whole dataset.
-    # Datasets of worker 0 are evenly split and distributed to all workers.
-    # This is the tricky part
-    mean = np.load(MEAN_FILE)
-
-    if comm.rank == 0:
+    if local_comm.rank == 0:
+        if data_comm.rank == 0:
+            train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
+            val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
+        else:
+            train = None
+            val = None
+        train = chainermn.scatter_dataset(train, data_comm, shuffle=True)
+        val = chainermn.scatter_dataset(val, data_comm, shuffle=True)
+    else:
         train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
         val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
-    else:
-        train = None
-        val = None
-    # model inputs come from datasets, and each process takes different mini-batches
-    train_iter = chainermn.scatter_dataset(train, comm, shuffle=True)
-
+        train = chainermn.datasets.create_empty_dataset(train)
+        val = chainermn.datasets.create_empty_dataset(val)
     train_iter = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train_iter, args.batchsize, n_threads=40, shuffle=True), comm)
+        chainer.iterators.MultithreadIterator(train, args.batchsize, n_threads=20, shuffle=True), local_comm)
+    val_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.MultithreadIterator(val, args.batchsize, repeat=False, shuffle=False, n_threads=20), local_comm)
+
+    """
+     For Hybrid, we modify the multinode optimizer such that it takes two communicators. 
+     The first main communicator is for global all reduce and the second one is to do a local all reduce
+     
+     To avoid doing all reduce on all GPUs, just do on nodes. Use the data comm instead of the global comm
+    
+    """
 
 
-
-    val_iter = chainermn.scatter_dataset(val, comm, shuffle=True)
-
-
-    # Create a multi node optimizer from a standard Chainer optimizer.
-    # For Hybrid, we modify the multinode optimizer such that it takes two communicators. The first main communicator
-    # is for global all reduce and the second one is to do a local all reduce
-    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9), comm)
-
+    optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm)
     optimizer.setup(model)
 
     # Set up a trainer
@@ -186,7 +201,7 @@ def main():
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
@@ -194,7 +209,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if comm.rank == 0:
         print("Starting training .....")

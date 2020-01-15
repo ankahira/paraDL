@@ -130,14 +130,14 @@ def main():
     # Datasets of worker 0 are evenly split and distributed to all workers.
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainermnx.create_spatial_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (1, 'epoch')
+    val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
@@ -160,12 +160,12 @@ def main():
     if comm.rank == 0:
         print("Starting training .....")
 
-    hook = CupyMemoryProfileHook()
-    with hook:
-        trainer.run()
+    # hook = CupyMemoryProfileHook()
+    # with hook:
+    trainer.run()
 
-    if comm.rank == 0:
-        hook.print_report()
+    # if comm.rank == 0:
+    #     hook.print_report()
 
 
 if __name__ == '__main__':

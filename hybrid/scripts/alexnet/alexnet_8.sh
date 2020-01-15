@@ -14,7 +14,7 @@ source ~/.bash_profile
 
 
 
-mpiexec -n 8 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=alexnet  --batchsize=128  --epochs=1  --out="results/alexnet/debug"
+mpiexec -n 8 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=alexnet  --batchsize=1024  --epochs=1  --out="results/alexnet/debug"
 
 
 
