@@ -21,3 +21,7 @@ mpiexec -n 8 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet
 
 
 
+
+
+
+

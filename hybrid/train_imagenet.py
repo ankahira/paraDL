@@ -11,6 +11,8 @@ import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
 import chainermnx
+import chainer.links as L
+
 
 
 import chainermn
@@ -142,8 +144,9 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    # model = L.Classifier(models[args.model]())
-    model = models[args.model](local_comm)
+    model = L.Classifier(models[args.model](local_comm))
+
+    # model = models[args.model](local_comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
     model.to_gpu(device)
@@ -182,7 +185,6 @@ def main():
      To avoid doing all reduce on all GPUs, just do on nodes. Use the data comm instead of the global comm
     
     """
-
 
     optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm)
     optimizer.setup(model)

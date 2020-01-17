@@ -23,8 +23,9 @@ class AlexNet(chainer.Chain):
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)
 
-    def forward(self, x, t):
+    def forward(self, x):
         partions = cp.array_split(x, self.comm.size, -2)
+        # This part needs fixing. Probably all conditions are not checked
         if self.comm.rank == 0:
             x = partions[0]
         elif self.comm.rank == 1:
@@ -64,9 +65,10 @@ class AlexNet(chainer.Chain):
         h = F.dropout(F.relu(self.fc7(h)))
         h = self.fc8(h)
 
-        loss = F.softmax_cross_entropy(h, t)
-        chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
-        return loss
+        # loss = F.softmax_cross_entropy(h, t)
+        # chainer.report({'loss': loss, 'accuracy': F.accuracy(h, t)}, self)
+        # return loss
+        return h
 
 
 
