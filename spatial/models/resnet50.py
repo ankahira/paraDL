@@ -135,7 +135,7 @@ class ResNet50(chainer.Chain):
         h = self.res4(h)
         h = self.res5(h)
 
-        hs = chainermn.functions.allgather(self.comm, h)
+        hs = chainermn.functions.spatialallgather(self.comm, h)
         h = F.concat(hs, -2)
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)

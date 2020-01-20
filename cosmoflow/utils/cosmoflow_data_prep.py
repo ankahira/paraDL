@@ -1,7 +1,6 @@
 import os
 import h5py
 from chainer.dataset.dataset_mixin import DatasetMixin
-from chainer.functions import cast
 
 import chainer
 
@@ -18,7 +17,8 @@ def create_paths_list(dir):
     for root, dirs, files in os.walk(dir):
         for file in files:
             if file.endswith(".hdf5"):
-                filenames.append(file)
+                dirname = root.split(os.path.sep)[-1]
+                filenames.append(os.path.join(dirname, file))
 
     return filenames
 

@@ -3,7 +3,7 @@ import chainer.functions as F
 import chainermnx.functions as FX
 import chainer.links as L
 import chainermnx.links as LX
-import chainermn
+import chainermnx
 import cupy as cp
 
 
@@ -58,7 +58,7 @@ class AlexNet(chainer.Chain):
         h = FX.halo_exchange(self.comm, h, k_size=3, index=5, pad=1)
         h = F.relu(self.conv5(h))
         h = F.max_pooling_2d(h, ksize=3, stride=2)
-        hs = chainermn.functions.allgather(self.comm, h)
+        hs = chainermnx.functions.spatialallgather(self.comm, h)
         h = F.concat(hs, -2)
 
         h = F.dropout(F.relu(self.fc6(h)))
