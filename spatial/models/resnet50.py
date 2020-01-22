@@ -2,7 +2,7 @@
 # (https://github.com/yasunorikudo/chainer-ResNet)
 
 import chainer
-import chainermn
+import chainermnx
 import chainer.functions as F
 from chainer import initializers
 import chainer.links as L
@@ -135,7 +135,7 @@ class ResNet50(chainer.Chain):
         h = self.res4(h)
         h = self.res5(h)
 
-        hs = chainermn.functions.spatialallgather(self.comm, h)
+        hs = chainermnx.functions.spatialallgather(self.comm, h)
         h = F.concat(hs, -2)
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)

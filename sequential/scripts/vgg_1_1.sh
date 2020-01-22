@@ -12,6 +12,6 @@ conda activate
 
 job_name=train_vgg_1_1
 
-python  train_imagenet.py --model=vgg --batchsize=1 --epochs=1 --gpu=0 --out="results/vgg"
+python  train_imagenet.py --model=vgg --batchsize=8 --epochs=10 --gpu=0 --out="results/vgg"
 
 

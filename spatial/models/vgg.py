@@ -5,7 +5,7 @@ import chainer.links as L
 import chainermnx.functions as FX
 import chainermnx.links as LX
 
-import chainermn
+import chainermnx
 
 
 class VGG(chainer.Chain):
@@ -90,7 +90,7 @@ class VGG(chainer.Chain):
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=15)
         h = F.max_pooling_2d(h, 2, 2)
 
-        hs = chainermn.functions.spatialallgather(self.comm, h)
+        hs = chainermnx.functions.spatialallgather(self.comm, h)
         h = F.concat(hs, -2)
 
         h = F.dropout(F.relu(self.fc6(h)))

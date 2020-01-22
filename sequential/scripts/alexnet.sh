@@ -13,7 +13,7 @@ conda activate
 job_name=train_alexnet_1_1
 
 
-python train_imagenet.py --model=alexnet --batchsize=128 --epochs=1 --gpu=0 --out="results/alexnet/"
+python train_imagenet.py --model=alexnet --batchsize=128 --epochs=10 --gpu=0 --out="results/alexnet/"
 
 
 

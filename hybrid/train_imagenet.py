@@ -12,6 +12,8 @@ from chainer import training
 from chainer.training import extensions
 import chainermnx
 import chainer.links as L
+from datetime import datetime
+
 
 
 
@@ -161,16 +163,16 @@ def main():
 
     if local_comm.rank == 0:
         if data_comm.rank == 0:
-            train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
-            val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
+            train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 224)
+            val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 224, False)
         else:
             train = None
             val = None
         train = chainermn.scatter_dataset(train, data_comm, shuffle=True)
         val = chainermn.scatter_dataset(val, data_comm, shuffle=True)
     else:
-        train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
-        val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
+        train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 224)
+        val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 224, False)
         train = chainermn.datasets.create_empty_dataset(train)
         val = chainermn.datasets.create_empty_dataset(val)
     train_iter = chainermn.iterators.create_multi_node_iterator(
@@ -200,9 +202,13 @@ def main():
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
     trainer.extend(evaluator, trigger=val_interval)
+
+    filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
+
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=log_interval))
+        trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
+
         # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',

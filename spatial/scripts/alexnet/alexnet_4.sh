@@ -12,8 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-
-mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=128  --epochs=1  --out="results/alexnet/4"
+mpirun  -n 4  python train_imagenet.py  --model=alexnet  --batchsize=512  --epochs=10  --out="results/alexnet/4"
 
 
 

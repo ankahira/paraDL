@@ -7,12 +7,14 @@ from chainer.training import extensions
 import sys
 import numpy
 from chainer import dataset
+import cupy as cp
+from datetime import datetime
 
 from chainer import serializers
-
+import chainer.links as L
 
 # Local Imports
-from models.temp_alexnet import AlexNet
+from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
 
@@ -22,7 +24,7 @@ matplotlib.use('Agg')
 # Global Variables
 numpy.set_printoptions(threshold=sys.maxsize)
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/10_image_train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
@@ -30,7 +32,7 @@ MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
-    def __init__(self, path, root, mean, crop_size, random=False):
+    def __init__(self, path, root, mean, crop_size, random=True):
         self.base = chainer.datasets.LabeledImageDataset(path, root)
         self.mean = mean.astype(chainer.get_dtype())
         self.crop_size = crop_size
@@ -65,6 +67,14 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
+
+
+
     models = {
         'alexnet': AlexNet,
         'resnet': ResNet50,
@@ -90,7 +100,9 @@ def main():
     print('')
 
     # Initialize the model to train
-    model = models[args.model]()
+    # model = models[args.model]()
+    model = L.Classifier(models[args.model]())
+
     chainer.backends.cuda.get_device_from_id(device).use()
     model.to_gpu()
 
@@ -98,31 +110,34 @@ def main():
     mean = np.load(MEAN_FILE)
 
     # Load the dataset files
-    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 16, random=False)
-    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 16, False)
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226, True)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
 
-    train_iter = chainer.iterators.MultiprocessIterator(
-        train, batch_size, shuffle=False)
-    val_iter = chainer.iterators.MultiprocessIterator(
-        val, batch_size, repeat=False)
+    train_iter = chainer.iterators.MultithreadIterator(
+        train, batch_size,n_threads=20, shuffle=True)
+    val_iter = chainer.iterators.MultithreadIterator(
+        val, batch_size, n_threads=20, repeat=False)
     converter = dataset.concat_examples
 
-    optimizer = chainer.optimizers.MomentumSGD(lr=0.01, momentum=0.9)
+    optimizer =chainer.optimizers.Adam()
     optimizer.setup(model)
 
     # Set up a trainer
     updater = training.updaters.StandardUpdater(
         train_iter, optimizer, converter=converter, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (100, 'epoch')
-    log_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     trainer.extend(evaluator, trigger=val_interval)
 
-    trainer.extend(extensions.DumpGraph('main/loss'))
-    trainer.extend(extensions.LogReport(trigger=log_interval))
+    # trainer.extend(extensions.DumpGraph('main/loss'))
+    filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
+
+    trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
+
     trainer.extend(extensions.observe_lr(), trigger=log_interval)
     trainer.extend(extensions.PrintReport(
         ['epoch', 'main/loss', 'validation/main/loss',
@@ -132,7 +147,6 @@ def main():
     print("Starting training")
 
     trainer.run()
-    serializers.save_npz('sequential_model.npz', model)
 
 
 if __name__ == '__main__':

@@ -10,6 +10,9 @@ import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
 import chainermn
+import chainer.links as L
+from datetime import datetime
+
 
 import matplotlib
 
@@ -100,8 +103,9 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    # model = L.Classifier(models[args.model]())
-    model = models[args.model]()
+    # model = models[args.model]()
+    model = L.Classifier(models[args.model]())
+
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
@@ -130,7 +134,7 @@ def main():
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (1, 'epoch')
+    val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
@@ -138,10 +142,14 @@ def main():
     evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
     trainer.extend(evaluator, trigger=val_interval)
 
+    # Give file names data and time to prevent loosing information during reruns
+
+    filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
+
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=log_interval))
-        trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
+        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))

@@ -12,8 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-
-mpirun  -n 4  python train_imagenet.py  --model=vgg  --batchsize=4  --epochs=1  --out="results/vgg/4"
+mpirun  -n 4  python train_imagenet.py  --model=vgg  --batchsize=32  --epochs=10  --out="results/vgg/4"
 
 
 

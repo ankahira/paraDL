@@ -160,12 +160,7 @@ def main():
     if comm.rank == 0:
         print("Starting training .....")
 
-    # hook = CupyMemoryProfileHook()
-    # with hook:
     trainer.run()
-
-    # if comm.rank == 0:
-    #     hook.print_report()
 
 
 if __name__ == '__main__':
