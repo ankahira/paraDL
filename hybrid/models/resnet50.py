@@ -56,7 +56,6 @@ class BottleNeckA(chainer.Chain):
 
 
 class BottleNeckB(chainer.Chain):
-
     def __init__(self, comm, in_size, ch):
         super(BottleNeckB, self).__init__()
         self.comm = comm

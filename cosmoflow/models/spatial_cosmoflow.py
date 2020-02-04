@@ -7,6 +7,7 @@ from chainermnx.links import SpatialConvolution3D
 from chainer.links import Convolution3D
 import cupy as cp
 import chainermnx
+import chainermn
 
 
 class CosmoFlow(Chain):
@@ -19,22 +20,17 @@ class CosmoFlow(Chain):
             self.Conv2 = SpatialConvolution3D(comm=comm, index=2, in_channels=16, out_channels=32, ksize=3, stride=1, nobias=True)
 
             # Only the first 2 layers are in parallel
-            self.Conv3 = Convolution3D(in_channels=32, out_channels=64, ksize=3, stride=2, nobias=True)
-            self.Conv4 = Convolution3D(in_channels=64, out_channels=128, ksize=3, stride=1, nobias=True)
-            self.Conv5 = Convolution3D(in_channels=128, out_channels=256, ksize=2, stride=1, nobias=True)
-            self.Conv6 = Convolution3D(in_channels=256, out_channels=256, ksize=2, stride=1, nobias=True)
-            self.Conv7 = Convolution3D(in_channels=256, out_channels=128, ksize=2, stride=1, nobias=True)
-
-            # self.Conv3 = SpatialConvolution3D(comm=comm, index=3, in_channels=32, out_channels=64, ksize=4, stride=2, nobias=True)
-            # self.Conv4 = SpatialConvolution3D(comm=comm, index=4, in_channels=64, out_channels=128, ksize=3, stride=1, nobias=True)
-            # self.Conv5 = SpatialConvolution3D(comm=comm, index=5, in_channels=128, out_channels=256, ksize=2, stride=1, nobias=True)
-            # self.Conv6 = SpatialConvolution3D(comm=comm, index=6, in_channels=256, out_channels=256, ksize=2, stride=1, nobias=True)
-            # self.Conv7 = SpatialConvolution3D(comm=comm, index=7, in_channels=256, out_channels=128, ksize=2, stride=1, nobias=True)
+            self.Conv3 = Convolution3D(in_channels=32, out_channels=64, ksize=3, stride=1, pad=1, nobias=True)
+            self.Conv4 = Convolution3D(in_channels=64, out_channels=128, ksize=3, stride=2, pad=1, nobias=True)
+            self.Conv5 = Convolution3D(in_channels=128, out_channels=256, ksize=2, stride=1, pad=1, nobias=True)
+            self.Conv6 = Convolution3D(in_channels=256, out_channels=256, ksize=2, stride=1, pad=1, nobias=True)
+            self.Conv7 = Convolution3D(in_channels=256, out_channels=128, ksize=2, stride=1, pad=1, nobias=True)
             self.FC1 = L.Linear(None, 2048)
             self.FC2 = L.Linear(None, 256)
             self.Output = L.Linear(None, 4)
 
     def forward(self, x, y):
+        y = chainermn.functions.bcast(self.comm, y, 0)
         partions = cp.array_split(x, self.comm.size, -2)
         # This part needs fixing. Probably all conditions are not checked
         if self.comm.rank == 0:
@@ -68,8 +64,10 @@ class CosmoFlow(Chain):
         h = F.leaky_relu(self.FC1(h))
         h = F.leaky_relu(self.FC2(h))
         h = self.Output(h)
+
         loss = F.mean_squared_error(h, y)
         chainer.report({'loss': loss}, self)
+        # print("Rank ", self.comm.rank, "Completed forward and y is ", y)
         return loss
 
 

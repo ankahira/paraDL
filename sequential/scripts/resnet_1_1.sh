@@ -13,6 +13,6 @@ conda activate
 job_name=train_resnet_1_1
 
 
-python train_imagenet.py --model=resnet --batchsize=8 --epochs=10 --gpu=0 --out="results/resnet/resnet_1_1"
+python train_imagenet.py --model=resnet --batchsize=64 --epochs=1 --gpu=0 --out="results/resnet/resnet_1_1"
 
 

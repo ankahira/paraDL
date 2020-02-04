@@ -14,9 +14,9 @@ qsub -g gaa50004 scripts/alexnet/alexnet_64.sh
 qsub -g gaa50004 scripts/alexnet/alexnet_128.sh
 qsub -g gaa50004 scripts/alexnet/alexnet_256.sh
 qsub -g gaa50004 scripts/alexnet/alexnet_512.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_1024.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_full.sh
 
-
-#qsub -g gaa50004 scripts/alexnet/alexnet_1024.sh
 
 
 
@@ -53,6 +53,11 @@ qsub -g gaa50004 scripts/resnet/resnet_64.sh
 qsub -g gaa50004 scripts/resnet/resnet_128.sh
 qsub -g gaa50004 scripts/resnet/resnet_256.sh
 qsub -g gaa50004 scripts/resnet/resnet_512.sh
+qsub -g gaa50004 scripts/resnet/resnet_1024.sh
+
+qsub -g gaa50004 scripts/resnet/resnet_full.sh
+
+
 
 
 

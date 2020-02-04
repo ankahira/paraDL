@@ -187,7 +187,6 @@ def main():
      To avoid doing all reduce on all GPUs, just do on nodes. Use the data comm instead of the global comm
     
     """
-
     optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm)
     optimizer.setup(model)
 
@@ -221,7 +220,6 @@ def main():
         print("Starting training .....")
 
     trainer.run()
-    # serializers.save_npz('spatial_model_rank_{}.npz'.format(comm.rank), model)
 
 
 if __name__ == '__main__':

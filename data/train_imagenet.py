@@ -10,6 +10,7 @@ import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
 import chainermn
+import chainermnx
 import chainer.links as L
 from datetime import datetime
 
@@ -92,7 +93,7 @@ def main():
     p.join()
 
     # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("pure_nccl")
+    comm = chainermnx.create_communicator("pure_nccl")
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -105,7 +106,6 @@ def main():
 
     # model = models[args.model]()
     model = L.Classifier(models[args.model]())
-
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
@@ -123,16 +123,19 @@ def main():
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20)
+    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20, shuffle=True)
     val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
-
     # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    #TODO
+    # Remember to change this updater to the stardard updater not chainermnx
+    # You put this in oder to measure compute and data load time
+
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (1, 'epoch'), out)
 
     val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')

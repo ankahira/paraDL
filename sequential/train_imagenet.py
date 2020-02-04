@@ -9,6 +9,7 @@ import numpy
 from chainer import dataset
 import cupy as cp
 from datetime import datetime
+import chainermnx
 
 from chainer import serializers
 import chainer.links as L
@@ -29,6 +30,8 @@ VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
 MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+
+TIME = 0
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -67,6 +70,7 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
+
     # These two lines help with memory. If they are not included training runs out of memory.
     # Use them till you the real reason why its running out of memory
 
@@ -114,7 +118,7 @@ def main():
     val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
 
     train_iter = chainer.iterators.MultithreadIterator(
-        train, batch_size,n_threads=20, shuffle=True)
+        train, batch_size, n_threads=20, shuffle=True)
     val_iter = chainer.iterators.MultithreadIterator(
         val, batch_size, n_threads=20, repeat=False)
     converter = dataset.concat_examples
@@ -123,9 +127,9 @@ def main():
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = training.updaters.StandardUpdater(
+    updater = chainer.training.updaters.StandardUpdater(
         train_iter, optimizer, converter=converter, device=device)
-    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
+    trainer = training.Trainer(updater, (101, 'iteration'), out)
 
     val_interval = (100, 'epoch')
     log_interval = (1, 'iteration')
@@ -136,15 +140,15 @@ def main():
     # trainer.extend(extensions.DumpGraph('main/loss'))
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
 
-    trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
+    # trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
+    #
+    # trainer.extend(extensions.observe_lr(), trigger=log_interval)
+    # trainer.extend(extensions.PrintReport(
+    #     ['epoch', 'main/loss', 'validation/main/loss',
+    #      'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
+    # #trainer.extend(extensions.ProgressBar())
 
-    trainer.extend(extensions.observe_lr(), trigger=log_interval)
-    trainer.extend(extensions.PrintReport(
-        ['epoch', 'main/loss', 'validation/main/loss',
-         'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-    trainer.extend(extensions.ProgressBar())
-
-    print("Starting training")
+    # print("Starting training")
 
     trainer.run()
 
