@@ -1,0 +1,45 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 512
+Model :  alexnet
+Minibatch-size: 512
+Epochs: 10
+==========================================
+Starting training .....
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[18913,1],0] (PID 70124)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+epoch       main/loss   validation/main/loss  main/accuracy  validation/main/accuracy  elapsed_time
+[J1           6.90558                           0.0015625                                42.8206       
+[J2           6.89895                           0.000390625                              69.9678       
+[J3           6.89947                           0.00273437                               85.2505       
+[J4           6.86639                           0.0015625                                103.211       
+[J5           6.85467                           0.0015625                                116.905       
+[J6           6.79043                           0.00273437                               127.245       
+[J7           6.74537                           0.003125                                 144.149       
+[J8           6.71145                           0.003125                                 153.697       
+[J9           6.69631                           0.00390625                               161.925       
+[J10          6.68036                           0.00585938                               171.982       
+[J

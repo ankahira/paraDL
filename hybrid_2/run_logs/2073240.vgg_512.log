@@ -1,0 +1,235 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 512
+Model :  vgg
+Minibatch-size: 128
+Epochs: 10
+==========================================
+Starting training .....
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[15039,1],0] (PID 175220)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+epoch       main/loss   validation/main/loss  main/accuracy  validation/main/accuracy  elapsed_time
+[J     total [..................................................]  1.28%
+this epoch [######............................................] 12.79%
+        10 iter, 0 epoch / 10 epochs
+       inf iters/sec. Estimated time to finish: 0:00:00.
+[4A[J     total [#.................................................]  2.56%
+this epoch [############......................................] 25.57%
+        20 iter, 0 epoch / 10 epochs
+  0.089724 iters/sec. Estimated time to finish: 2:21:33.080577.
+[4A[J     total [#.................................................]  3.84%
+this epoch [###################...............................] 38.36%
+        30 iter, 0 epoch / 10 epochs
+  0.093256 iters/sec. Estimated time to finish: 2:14:24.158962.
+[4A[J     total [##................................................]  5.11%
+this epoch [#########################.........................] 51.15%
+        40 iter, 0 epoch / 10 epochs
+  0.092637 iters/sec. Estimated time to finish: 2:13:30.136219.
+[4A[J     total [###...............................................]  6.39%
+this epoch [###############################...................] 63.94%
+        50 iter, 0 epoch / 10 epochs
+  0.092527 iters/sec. Estimated time to finish: 2:11:51.539947.
+[4A[J     total [###...............................................]  7.67%
+this epoch [######################################............] 76.72%
+        60 iter, 0 epoch / 10 epochs
+  0.092237 iters/sec. Estimated time to finish: 2:10:27.984224.
+[4A[J     total [####..............................................]  8.95%
+this epoch [############################################......] 89.51%
+        70 iter, 0 epoch / 10 epochs
+  0.091212 iters/sec. Estimated time to finish: 2:10:06.324009.
+[4A[J1           7.04032                           0.000692247                              815.968       
+[J     total [#####.............................................] 10.23%
+this epoch [#.................................................]  2.30%
+        80 iter, 1 epoch / 10 epochs
+   0.09116 iters/sec. Estimated time to finish: 2:08:21.110338.
+[4A[J     total [#####.............................................] 11.51%
+this epoch [#######...........................................] 15.08%
+        90 iter, 1 epoch / 10 epochs
+  0.090667 iters/sec. Estimated time to finish: 2:07:12.689019.
+[4A[J     total [######............................................] 12.79%
+this epoch [#############.....................................] 27.87%
+       100 iter, 1 epoch / 10 epochs
+  0.090914 iters/sec. Estimated time to finish: 2:05:01.959653.
+[4A[J     total [#######...........................................] 14.07%
+this epoch [####################..............................] 40.66%
+       110 iter, 1 epoch / 10 epochs
+  0.090482 iters/sec. Estimated time to finish: 2:03:47.219567.
+[4A[J     total [#######...........................................] 15.34%
+this epoch [##########################........................] 53.45%
+       120 iter, 1 epoch / 10 epochs
+  0.090544 iters/sec. Estimated time to finish: 2:01:51.747473.
+[4A[J     total [########..........................................] 16.62%
+this epoch [#################################.................] 66.23%
+       130 iter, 1 epoch / 10 epochs
+  0.090103 iters/sec. Estimated time to finish: 2:00:36.484855.
+[4A[J     total [########..........................................] 17.90%
+this epoch [#######################################...........] 79.02%
+       140 iter, 1 epoch / 10 epochs
+  0.089766 iters/sec. Estimated time to finish: 1:59:12.278309.
+[4AException in main training loop: cudaErrorIllegalAddress: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/trainer.py", line 343, in run
+    update()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/updaters/standard_updater.py", line 240, in update
+    self.update_core()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/updaters/standard_updater.py", line 253, in update_core
+    optimizer.update(loss_func, *in_arrays)
+  File "/home/acb10954wf/.local/chainermnx/chainermnx/optimizers/hybrid_optimizer.py", line 39, in update
+    loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/variable.py", line 1582, in backward
+    [(node, grad_var)], retain_grad, loss_scale)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop.py", line 226, in _backprop_to_all
+    func, target_input_indexes, out_grad, in_grad, is_debug)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop_utils.py", line 140, in backprop_step
+    _reraise_with_stack(func, e)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop_utils.py", line 138, in backprop_step
+    target_input_indexes, grad_outputs)
+  File "/home/acb10954wf/.local/chainermnx/chainermnx/functions/convolution_2d.py", line 302, in backward
+    self.comm.send(lower_halo_region, self.comm.rank + 1, (self.comm.rank + 1) * self.index)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainermn/communicators/mpi_communicator_base.py", line 255, in send
+    chainer.cuda.Stream.null.synchronize()
+  File "cupy/cuda/stream.pyx", line 227, in cupy.cuda.stream.Stream.synchronize
+  File "cupy/cuda/runtime.pyx", line 534, in cupy.cuda.runtime.streamSynchronize
+  File "cupy/cuda/runtime.pyx", line 537, in cupy.cuda.runtime.streamSynchronize
+  File "cupy/cuda/runtime.pyx", line 201, in cupy.cuda.runtime.check_status
+Will finalize trainer extensions and updater before reraising the exception.
+Traceback (most recent call last):
+  File "train_imagenet.py", line 224, in <module>
+    main()
+  File "train_imagenet.py", line 219, in main
+    trainer.run()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/trainer.py", line 376, in run
+    six.reraise(*exc_info)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/six.py", line 693, in reraise
+    raise value
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/trainer.py", line 343, in run
+    update()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/updaters/standard_updater.py", line 240, in update
+    self.update_core()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/training/updaters/standard_updater.py", line 253, in update_core
+    optimizer.update(loss_func, *in_arrays)
+  File "/home/acb10954wf/.local/chainermnx/chainermnx/optimizers/hybrid_optimizer.py", line 39, in update
+    loss.backward(loss_scale=self.actual_optimizer._loss_scale)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/variable.py", line 1582, in backward
+    [(node, grad_var)], retain_grad, loss_scale)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop.py", line 226, in _backprop_to_all
+    func, target_input_indexes, out_grad, in_grad, is_debug)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop_utils.py", line 140, in backprop_step
+    _reraise_with_stack(func, e)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backprop_utils.py", line 138, in backprop_step
+    target_input_indexes, grad_outputs)
+  File "/home/acb10954wf/.local/chainermnx/chainermnx/functions/convolution_2d.py", line 302, in backward
+    self.comm.send(lower_halo_region, self.comm.rank + 1, (self.comm.rank + 1) * self.index)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainermn/communicators/mpi_communicator_base.py", line 255, in send
+    chainer.cuda.Stream.null.synchronize()
+  File "cupy/cuda/stream.pyx", line 227, in cupy.cuda.stream.Stream.synchronize
+  File "cupy/cuda/runtime.pyx", line 534, in cupy.cuda.runtime.streamSynchronize
+  File "cupy/cuda/runtime.pyx", line 537, in cupy.cuda.runtime.streamSynchronize
+  File "cupy/cuda/runtime.pyx", line 201, in cupy.cuda.runtime.check_status
+cupy.cuda.runtime.CUDARuntimeError: cudaErrorIllegalAddress: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Exception ignored in: 'cupy.cuda.function.Module.__dealloc__'
+Traceback (most recent call last):
+  File "cupy/cuda/driver.pyx", line 247, in cupy.cuda.driver.moduleUnload
+  File "cupy/cuda/driver.pyx", line 118, in cupy.cuda.driver.check_status
+cupy.cuda.driver.CUDADriverError: CUDA_ERROR_ILLEGAL_ADDRESS: an illegal memory access was encountered
+Error in sys.excepthook:
+
+Original exception was:
+Error in sys.excepthook:
+
+Original exception was:
+Error in sys.excepthook:
+
+Original exception was:
+--------------------------------------------------------------------------
+ORTE has lost communication with a remote daemon.
+
+  HNP daemon   : [[15039,0],0] on node g0049
+  Remote daemon: [[15039,0],1] on node g0054
+
+This is usually due to either a failure of the TCP network
+connection to the node, or possibly an internal failure of
+the daemon itself. We cannot recover from this failure, and
+therefore will terminate the job.
+--------------------------------------------------------------------------

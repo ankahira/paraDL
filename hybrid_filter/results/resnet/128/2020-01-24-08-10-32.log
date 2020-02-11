@@ -1,0 +1,74 @@
+[
+    {
+        "main/loss": 5.97070837020874,
+        "main/accuracy": 0.03197384253144264,
+        "epoch": 1,
+        "iteration": 626,
+        "elapsed_time": 1777.4106861921027
+    },
+    {
+        "main/loss": 4.655185699462891,
+        "main/accuracy": 0.11269468814134598,
+        "epoch": 2,
+        "iteration": 1252,
+        "elapsed_time": 3535.7870283820666
+    },
+    {
+        "main/loss": 3.950430154800415,
+        "main/accuracy": 0.17419999837875366,
+        "epoch": 3,
+        "iteration": 1877,
+        "elapsed_time": 5289.939993422013
+    },
+    {
+        "main/loss": 3.5482397079467773,
+        "main/accuracy": 0.2127346247434616,
+        "epoch": 4,
+        "iteration": 2503,
+        "elapsed_time": 7041.148989356123
+    },
+    {
+        "main/loss": 3.269197940826416,
+        "main/accuracy": 0.23774999380111694,
+        "epoch": 5,
+        "iteration": 3128,
+        "elapsed_time": 8792.161181261297
+    },
+    {
+        "main/loss": 3.0956196784973145,
+        "main/accuracy": 0.2560902535915375,
+        "epoch": 6,
+        "iteration": 3754,
+        "elapsed_time": 10539.181973268278
+    },
+    {
+        "main/loss": 2.9409449100494385,
+        "main/accuracy": 0.26951876282691956,
+        "epoch": 7,
+        "iteration": 4380,
+        "elapsed_time": 12290.261348511092
+    },
+    {
+        "main/loss": 2.828691244125366,
+        "main/accuracy": 0.2812750041484833,
+        "epoch": 8,
+        "iteration": 5005,
+        "elapsed_time": 14037.228236383293
+    },
+    {
+        "main/loss": 2.7303500175476074,
+        "main/accuracy": 0.2900858521461487,
+        "epoch": 9,
+        "iteration": 5631,
+        "elapsed_time": 15783.066281954292
+    },
+    {
+        "main/loss": 2.650291919708252,
+        "main/accuracy": 0.29760000109672546,
+        "validation/main/loss": 3.008638858795166,
+        "validation/main/accuracy": 0.26435184478759766,
+        "epoch": 10,
+        "iteration": 6256,
+        "elapsed_time": 17563.82803006796
+    }
+]

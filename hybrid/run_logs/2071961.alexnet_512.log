@@ -1,0 +1,121 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 512
+Model :  alexnet
+Minibatch-size: 512
+Epochs: 10
+==========================================
+Starting training .....
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[53224,1],0] (PID 215828)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+epoch       main/loss   validation/main/loss  main/accuracy  validation/main/accuracy  elapsed_time
+[J     total [##................................................]  5.11%
+this epoch [#########################.........................] 51.15%
+        10 iter, 0 epoch / 10 epochs
+       inf iters/sec. Estimated time to finish: 0:00:00.
+[4A[J1           6.90281                           0.00136719                               37.0554       
+[J     total [#####.............................................] 10.23%
+this epoch [#.................................................]  2.30%
+        20 iter, 1 epoch / 10 epochs
+   0.69033 iters/sec. Estimated time to finish: 0:04:14.236890.
+[4A[J     total [#######...........................................] 15.34%
+this epoch [##########################........................] 53.45%
+        30 iter, 1 epoch / 10 epochs
+   0.53358 iters/sec. Estimated time to finish: 0:05:10.182391.
+[4A[J2           6.84646                           0.00214844                               78.5634       
+[J     total [##########........................................] 20.46%
+this epoch [##................................................]  4.60%
+        40 iter, 2 epoch / 10 epochs
+    0.5359 iters/sec. Estimated time to finish: 0:04:50.182829.
+[4A[J     total [############......................................] 25.57%
+this epoch [###########################.......................] 55.74%
+        50 iter, 2 epoch / 10 epochs
+   0.56546 iters/sec. Estimated time to finish: 0:04:17.324437.
+[4A[J3           6.79496                           0.00390625                               108.194       
+[J     total [###############...................................] 30.69%
+this epoch [###...............................................]  6.89%
+        60 iter, 3 epoch / 10 epochs
+   0.56347 iters/sec. Estimated time to finish: 0:04:00.486836.
+[4A[J     total [#################.................................] 35.80%
+this epoch [#############################.....................] 58.04%
+        70 iter, 3 epoch / 10 epochs
+   0.57161 iters/sec. Estimated time to finish: 0:03:39.570070.
+[4A[J4           6.65097                           0.00498047                               142.985       
+[J     total [####################..............................] 40.92%
+this epoch [####..............................................]  9.19%
+        80 iter, 4 epoch / 10 epochs
+   0.57247 iters/sec. Estimated time to finish: 0:03:21.772088.
+[4A[J     total [#######################...........................] 46.03%
+this epoch [##############################....................] 60.34%
+        90 iter, 4 epoch / 10 epochs
+   0.56866 iters/sec. Estimated time to finish: 0:03:05.537943.
+[4A[J5           6.57782                           0.00709293                               177.549       
+[J     total [#########################.........................] 51.15%
+this epoch [#####.............................................] 11.49%
+       100 iter, 5 epoch / 10 epochs
+   0.57004 iters/sec. Estimated time to finish: 0:02:47.546808.
+[4A[J     total [############################......................] 56.26%
+this epoch [###############################...................] 62.64%
+       110 iter, 5 epoch / 10 epochs
+   0.57571 iters/sec. Estimated time to finish: 0:02:28.526603.
+[4A[J6           6.38008                           0.0104492                                210.587       
+[J     total [##############################....................] 61.38%
+this epoch [######............................................] 13.79%
+       120 iter, 6 epoch / 10 epochs
+   0.57527 iters/sec. Estimated time to finish: 0:02:11.255596.
+[4A[J     total [#################################.................] 66.49%
+this epoch [################################..................] 64.94%
+       130 iter, 6 epoch / 10 epochs
+   0.57768 iters/sec. Estimated time to finish: 0:01:53.398883.
+[4A[J7           6.2821                            0.0143914                                244.085       
+[J     total [###################################...............] 71.61%
+this epoch [########..........................................] 16.08%
+       140 iter, 7 epoch / 10 epochs
+   0.57447 iters/sec. Estimated time to finish: 0:01:36.624006.
+[4A[J     total [######################################............] 76.72%
+this epoch [#################################.................] 67.23%
+       150 iter, 7 epoch / 10 epochs
+   0.57848 iters/sec. Estimated time to finish: 0:01:18.668150.
+[4A[J8           6.18452                           0.0168945                                275.866       
+[J     total [########################################..........] 81.84%
+this epoch [#########.........................................] 18.38%
+       160 iter, 8 epoch / 10 epochs
+   0.58233 iters/sec. Estimated time to finish: 0:01:00.975040.
+[4A[J     total [###########################################.......] 86.95%
+this epoch [##################################................] 69.53%
+       170 iter, 8 epoch / 10 epochs
+   0.58744 iters/sec. Estimated time to finish: 0:00:43.421720.
+[4A[J9           5.97177                           0.031764                                 305.488       
+[J     total [##############################################....] 92.07%
+this epoch [##########........................................] 20.68%
+       180 iter, 9 epoch / 10 epochs
+   0.58492 iters/sec. Estimated time to finish: 0:00:26.512604.
+[4A[J     total [################################################..] 97.18%
+this epoch [###################################...............] 71.83%
+       190 iter, 9 epoch / 10 epochs
+   0.58396 iters/sec. Estimated time to finish: 0:00:09.431846.
+[4A[J10          5.81534                           0.0379883                                340.378       
+[J

@@ -1,0 +1,73 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 512
+Model :  vgg
+Minibatch-size: 32
+Epochs: 10
+==========================================
+Starting training .....
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[12206,1],0] (PID 258947)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+epoch       main/loss   validation/main/loss  main/accuracy  validation/main/accuracy  elapsed_time
+[J1           7.12324                           0.000791139                              64.5949       
+[J     total [######............................................] 12.78%
+this epoch [#############.....................................] 27.85%
+       100 iter, 1 epoch / 10 epochs
+       inf iters/sec. Estimated time to finish: 0:00:00.
+[4A[J2           6.9059                            0.00160256                               109.621       
+[J     total [############......................................] 25.57%
+this epoch [###########################.......................] 55.69%
+       200 iter, 2 epoch / 10 epochs
+    1.7317 iters/sec. Estimated time to finish: 0:05:36.202425.
+[4A[J3           6.90661                           0.00120192                               153.273       
+[J     total [###################...............................] 38.35%
+this epoch [#########################################.........] 83.54%
+       300 iter, 3 epoch / 10 epochs
+    1.7117 iters/sec. Estimated time to finish: 0:04:41.703532.
+[4A[J4           6.90636                           0                                        199.417       
+[J5           6.90661                           0.00118671                               244.532       
+[J     total [#########################.........................] 51.14%
+this epoch [#####.............................................] 11.39%
+       400 iter, 5 epoch / 10 epochs
+    1.7447 iters/sec. Estimated time to finish: 0:03:39.055649.
+[4A[J6           6.90632                           0.00120192                               287.309       
+[J     total [###############################...................] 63.92%
+this epoch [###################...............................] 39.23%
+       500 iter, 6 epoch / 10 epochs
+    1.7418 iters/sec. Estimated time to finish: 0:02:42.008958.
+[4A[J7           6.90659                           0.000801282                              331.482       
+[J     total [######################################............] 76.71%
+this epoch [#################################.................] 67.08%
+       600 iter, 7 epoch / 10 epochs
+    1.7644 iters/sec. Estimated time to finish: 0:01:43.258196.
+[4A[J8           6.90649                           0.00120192                               374.161       
+[J     total [############################################......] 89.49%
+this epoch [###############################################...] 94.93%
+       700 iter, 8 epoch / 10 epochs
+     1.777 iters/sec. Estimated time to finish: 0:00:46.250170.
+[4A[J9           6.90635                           0.00120192                               417.13        
+[J10          6.90612                           0.000791139                              459.938       
+[J

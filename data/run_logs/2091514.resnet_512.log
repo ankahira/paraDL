@@ -1,0 +1,59 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 512
+Model :  resnet
+Minibatch-size: 64
+Epochs: 10
+==========================================
+Traceback (most recent call last):
+  File "train_imagenet.py", line 169, in <module>
+    main()
+  File "train_imagenet.py", line 111, in main
+    model.to_gpu()
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/device_resident.py", line 125, in to_gpu
+    self.__to_device(visitor)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/device_resident.py", line 175, in __to_device
+    self.device_resident_accept(to_device_visitor)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/link.py", line 953, in device_resident_accept
+    d[name].device_resident_accept(visitor)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/link.py", line 953, in device_resident_accept
+    d[name].device_resident_accept(visitor)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/link.py", line 455, in device_resident_accept
+    visitor.visit_variable(x)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/device_resident.py", line 340, in visit_variable
+    param.to_device(self._device)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/variable.py", line 1893, in to_device
+    super(Parameter, self)._to_device(device, allow_unchaining=True)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/variable.py", line 1325, in _to_device
+    new_arr = device.send(arr)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backend.py", line 114, in send
+    return _convert_arrays(arrays, self.send_array)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/_backend.py", line 19, in _convert_arrays
+    return func(array)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/backends/cuda.py", line 258, in send_array
+    return _array_to_gpu(array, self.device, None)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/chainer/backends/cuda.py", line 460, in _array_to_gpu
+    return cupy.asarray(array)
+  File "/home/acb10954wf/.local/anaconda3/lib/python3.7/site-packages/cupy/creation/from_data.py", line 68, in asarray
+    return core.array(a, dtype, False, order)
+  File "cupy/core/core.pyx", line 1768, in cupy.core.core.array
+  File "cupy/core/core.pyx", line 1845, in cupy.core.core.array
+  File "cupy/core/core.pyx", line 1920, in cupy.core.core._send_object_to_gpu
+  File "cupy/core/core.pyx", line 134, in cupy.core.core.ndarray.__init__
+  File "cupy/cuda/memory.pyx", line 540, in cupy.cuda.memory.alloc
+  File "cupy/cuda/memory.pyx", line 1234, in cupy.cuda.memory.MemoryPool.malloc
+  File "cupy/cuda/memory.pyx", line 1255, in cupy.cuda.memory.MemoryPool.malloc
+  File "cupy/cuda/memory.pyx", line 1033, in cupy.cuda.memory.SingleDeviceMemoryPool.malloc
+  File "cupy/cuda/memory.pyx", line 1053, in cupy.cuda.memory.SingleDeviceMemoryPool._malloc
+  File "cupy/cuda/memory.pyx", line 775, in cupy.cuda.memory._try_malloc
+cupy.cuda.memory.OutOfMemoryError: Out of memory allocating 512 bytes (allocated so far: 0 bytes).
+Starting training .....

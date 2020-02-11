@@ -1,0 +1,49 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+==========================================
+Num of GPUs : 1024
+Model :  resnet
+Minibatch-size: 64
+Epochs: 10
+==========================================
+Starting training .....
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[41034,1],0] (PID 138592)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+epoch       main/loss   validation/main/loss  main/accuracy  validation/main/accuracy  elapsed_time
+[J1           7.12376                           0.00234375                               32.0018       
+[J2           6.50618                           0.0132813                                36.8321       
+[J3           5.98411                           0.0370066                                41.3282       
+[J4           5.61034                           0.0476562                                46.0588       
+[J5           5.19604                           0.0847039                                50.546        
+[J     total [#########################.........................] 51.12%
+this epoch [#####.............................................] 11.18%
+       100 iter, 5 epoch / 10 epochs
+       inf iters/sec. Estimated time to finish: 0:00:00.
+[4A[J6           4.78167                           0.120312                                 55.4482       
+[J7           4.46031                           0.164474                                 59.9186       
+[J8           4.13756                           0.2                                      64.6181       
+[J9           3.86643                           0.223438                                 69.3187       
+[J10          3.64056                           0.251645                                 73.7926       
+[J
