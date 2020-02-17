@@ -6,6 +6,7 @@ import random
 import numpy as np
 import multiprocessing
 
+
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions

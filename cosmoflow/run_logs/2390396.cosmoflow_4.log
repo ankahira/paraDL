@@ -1,0 +1,32 @@
+No Modulefiles Currently Loaded.
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Currently Loaded Modulefiles:
+  1) cuda/9.0/9.0.176.4   3) nccl/2.3/2.3.5-2
+  2) cudnn/7.3/7.3.1      4) openmpi/2.1.6
+Starting Training 
+--------------------------------------------------------------------------
+A process has executed an operation involving a call to the
+"fork()" system call to create a child process.  Open MPI is currently
+operating in a condition that could result in memory corruption or
+other system errors; your job may hang, crash, or produce silent
+data corruption.  The use of fork() (or system() or other calls that
+create child processes) is strongly discouraged.
+
+The process that invoked fork was:
+
+  Local host:          [[27420,1],0] (PID 139723)
+
+If you are *absolutely sure* that your application will successfully
+and correctly survive a call to fork(), you may disable this warning
+by setting the mpi_warn_on_fork MCA parameter to 0.
+--------------------------------------------------------------------------
+[J     total [..................................................]  0.01%
+this epoch [..................................................]  0.06%
+         1 iter, 0 epoch / 10 epochs
+       inf iters/sec. Estimated time to finish: 0:00:00.
+[4A
