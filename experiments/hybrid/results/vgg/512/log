@@ -1,0 +1,30 @@
+[
+    {
+        "main/loss": 6.961120128631592,
+        "main/accuracy": 0.0011980830458924174,
+        "epoch": 1,
+        "iteration": 313,
+        "elapsed_time": 1229.6965358532034
+    },
+    {
+        "main/loss": 6.906563758850098,
+        "main/accuracy": 0.0006988818058744073,
+        "epoch": 2,
+        "iteration": 626,
+        "elapsed_time": 2836.815512896981
+    },
+    {
+        "main/loss": 6.906428813934326,
+        "main/accuracy": 0.0011980830458924174,
+        "epoch": 3,
+        "iteration": 939,
+        "elapsed_time": 4327.847172751091
+    },
+    {
+        "main/loss": 6.906283378601074,
+        "main/accuracy": 0.0006988818058744073,
+        "epoch": 4,
+        "iteration": 1252,
+        "elapsed_time": 5816.091709772125
+    }
+]
