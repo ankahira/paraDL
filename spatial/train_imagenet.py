@@ -135,9 +135,9 @@ def main():
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
-    val_interval = (100, 'epoch')
+    val_interval = (1, 'epoch')
     log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
@@ -155,7 +155,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.ProgressBar(update_interval=100))
 
     if comm.rank == 0:
         print("Starting training .....")

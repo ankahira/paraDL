@@ -30,6 +30,7 @@ class VGG(chainer.Chain):
             self.fc8 = L.Linear(4096, 1000)
 
     def forward(self, x):
+
         h = F.relu(self.conv1_1(x))
         h = F.relu(self.conv1_2(h))
         h = F.max_pooling_2d(h, 2, 2)

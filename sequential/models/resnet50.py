@@ -102,5 +102,4 @@ class ResNet50(chainer.Chain):
         h = self.res5(h)
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
-        #
         return h

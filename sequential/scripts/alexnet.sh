@@ -10,10 +10,10 @@ source /etc/profile.d/modules.sh
 source ~/.bash_profile
 conda activate
 
-job_name=train_alexnet_1_1
+job_name=train_alexnet
 
 
-python train_imagenet.py --model=alexnet --batchsize=512 --epochs=1 --gpu=0 --out="results/alexnet/"
+python train_imagenet.py --model=alexnet --batchsize=128 --epochs=1 --gpu=0 --out="results/alexnet/"
 
 
 

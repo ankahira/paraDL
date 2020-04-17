@@ -18,7 +18,7 @@ sleep 5
 # Resnet Jobs
 
 
-qsub -g gaa50004 ./scripts/resnet_1_1.sh
+qsub -g gaa50004 ./scripts/resnet.sh
 
 qsub -g gaa50004 ./scripts/resnet_1_32.sh
 
@@ -32,7 +32,7 @@ sleep 5
 # VGG Jobs
 
 
-qsub -g gaa50004 ./scripts/vgg_1_1.sh
+qsub -g gaa50004 ./scripts/vgg.sh
 
 qsub -g gaa50004 ./scripts/vgg_1_32.sh
 

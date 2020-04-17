@@ -85,7 +85,7 @@ def main():
         'vgg': VGG,
     }
 
-    parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
+    parser = argparse.ArgumentParser(description='Train ImageNet Sequential')
     parser.add_argument('--model', '-M', choices=models.keys(), default='AlexNet', help='Convnet model')
     parser.add_argument('--batchsize', '-B', type=int, default=32, help='Learning minibatch size')
     parser.add_argument('--epochs', '-E', type=int, default=10, help='Number of epochs to train')
@@ -129,26 +129,26 @@ def main():
     # Set up a trainer
     updater = chainer.training.updaters.StandardUpdater(
         train_iter, optimizer, converter=converter, device=device)
-    trainer = training.Trainer(updater, (101, 'iteration'), out)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (100, 'epoch')
-    log_interval = (1, 'iteration')
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'epoch')
 
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     trainer.extend(evaluator, trigger=val_interval)
 
-    # trainer.extend(extensions.DumpGraph('main/loss'))
+    trainer.extend(extensions.DumpGraph('main/loss'))
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
 
-    # trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
-    #
-    # trainer.extend(extensions.observe_lr(), trigger=log_interval)
-    # trainer.extend(extensions.PrintReport(
-    #     ['epoch', 'main/loss', 'validation/main/loss',
-    #      'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
-    # #trainer.extend(extensions.ProgressBar())
+    trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
 
-    # print("Starting training")
+    trainer.extend(extensions.observe_lr(), trigger=log_interval)
+    trainer.extend(extensions.PrintReport(
+        ['epoch', 'main/loss', 'validation/main/loss',
+         'main/accuracy', 'validation/main/accuracy', 'elapsed_time', 'lr']), trigger=log_interval)
+    trainer.extend(extensions.ProgressBar())
+
+    print("Starting training")
 
     trainer.run()
 

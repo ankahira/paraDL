@@ -5,6 +5,7 @@ import argparse
 import random
 import numpy as np
 import multiprocessing
+import shutil
 
 import chainer.backends.cuda
 from chainer import training
@@ -69,6 +70,8 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
+
+
     models = {
         'alexnet': AlexNet,
         'resnet': ResNet50,
@@ -87,10 +90,21 @@ def main():
     out = args.out
 
     # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
-    multiprocessing.set_start_method('forkserver')
-    p = multiprocessing.Process()
-    p.start()
-    p.join()
+    # multiprocessing.set_start_method('forkserver')
+    # p = multiprocessing.Process()
+    # p.start()
+    # p.join()
+
+    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+
+
 
     # Prepare ChainerMN communicator.
     comm = chainermnx.create_communicator("pure_nccl")
@@ -127,18 +141,18 @@ def main():
     val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, out)
     optimizer.setup(model)
     # Set up a trainer
     #TODO
     # Remember to change this updater to the stardard updater not chainermnx
     # You put this in oder to measure compute and data load time
 
-    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (1, 'epoch'), out)
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    val_interval = (100, 'epoch')
-    log_interval = (1, 'epoch')
+    val_interval = (10, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)

@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -l rt_F=1
-#$ -l h_rt=72:00:00
+#$ -l h_rt=10:00:00
 #$ -N vgg_full
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y
@@ -13,7 +13,7 @@ conda activate
 source ~/.bash_profile
 
 
-mpirun  -n 3  python train_imagenet.py  --model=vgg  --batchsize=4  --epochs=70  --out="results/vgg/full"
+mpirun  -n 3  python train_imagenet.py  --model=vgg  --batchsize=4  --epochs=50  --out="results/vgg/full"
 
 
 

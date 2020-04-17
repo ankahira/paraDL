@@ -4,8 +4,11 @@ from __future__ import print_function
 import argparse
 import multiprocessing
 import random
+import shutil
+
 
 import numpy as np
+import cupy as cp
 
 
 import chainer.backends.cuda
@@ -68,6 +71,16 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
+
+
+
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
+
+    chainer.disable_experimental_feature_warning = True
     models = {
         'alexnet': AlexNet,
         'resnet': ResNet50,
@@ -90,6 +103,15 @@ def main():
     p = multiprocessing.Process()
     p.start()
     p.join()
+
+    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
 
     # Prepare ChainerMN communicator.
     comm = chainermn.create_communicator("pure_nccl")
@@ -131,7 +153,7 @@ def main():
 
     # Set up a trainer
     updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
@@ -143,22 +165,22 @@ def main():
 
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=(1, 'epoch')))
+        trainer.extend(extensions.LogReport(trigger=(1, 'iteration')))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'epoch'))
-        trainer.extend(extensions.ProgressBar(update_interval=1))
+        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'iteration'))
+        trainer.extend(extensions.ProgressBar(update_interval=100))
 
     # TODO : Figure out how to send this report to a file
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    hook = CupyMemoryProfileHook()
-    with hook:
-        trainer.run()
+    # hook = TimerHook()
+    # with hook:
+    trainer.run()
 
-    if comm.rank == 0:
-        hook.print_report()
+    # if comm.rank == 0:
+    #     hook.print_report()
 
 
 if __name__ == '__main__':

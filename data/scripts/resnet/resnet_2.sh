@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -l rt_F=1
-#$ -l h_rt=40:00:00
+#$ -l h_rt=01:00:00
 #$ -N resnet_2
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y
