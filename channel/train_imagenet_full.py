@@ -164,11 +164,11 @@ def main():
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
-    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
+    updater = chainer.training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
     val_interval = (1, 'epoch')
-    log_interval = (1, 'iteration')
+    log_interval = (1, 'epoch')
 
     # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
@@ -180,8 +180,7 @@ def main():
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
+        # trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))

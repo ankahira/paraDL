@@ -17,6 +17,7 @@ from chainer.training import extensions
 from chainer.function_hooks import TimerHook, CupyMemoryProfileHook
 
 import chainermn
+import chainermnx
 
 import chainer.links as L
 
@@ -114,7 +115,7 @@ def main():
         print("Error: %s - %s." % (e.filename, e.strerror))
 
     # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("pure_nccl")
+    comm = chainermnx.create_communicator("filter_nccl")
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -129,6 +130,7 @@ def main():
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
+    comm._init_comms()
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
@@ -160,16 +162,25 @@ def main():
     # Since I need to measure timer per epoch, I avoid evaluation and just train the model
     # By setting the evaluation epoch high, this will not be triggered when i am running few epochs
     trainer.extend(evaluator, trigger=(20, 'epoch'))
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Some display and output extensions are necessary only for one worker.
 
+    # Some display and output extensions are necessary only for one worker.
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=(1, 'iteration')))
+        trainer.extend(extensions.LogReport(trigger=log_interval))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        trainer.extend(extensions.PrintReport(['epoch', 'elapsed_time', ]), trigger=(1, 'iteration'))
-        trainer.extend(extensions.ProgressBar(update_interval=100))
-
+        trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.PrintReport(
+            ['epoch', 'main/loss', 'validation/main/loss',
+             'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        trainer.extend(extensions.PlotReport(
+            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        trainer.extend(extensions.PlotReport(
+            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar())
     # TODO : Figure out how to send this report to a file
 
     if comm.rank == 0:
