@@ -188,7 +188,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     # TODO : Figure out how to send this report to a file
 
