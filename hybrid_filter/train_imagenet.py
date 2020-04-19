@@ -8,6 +8,7 @@ import os
 
 import numpy as np
 import cupy as cp
+import shutil
 
 import chainer.backends.cuda
 from chainer import training
@@ -16,6 +17,7 @@ from chainer.function_hooks import TimerHook, CupyMemoryProfileHook
 from datetime import datetime
 
 import chainermn
+import chainermnx
 
 import chainer.links as L
 
@@ -92,10 +94,12 @@ def create_data_comm(comm):
     :arg: comm
     :return data comm
     """
-    if comm.rank % 4 == 0:
-        colour = 0
-    else:
-        colour = 1
+    colour = comm.rank % 4
+
+    # if comm.rank % 4 == 0:
+    #     colour = 0
+    # else:
+    #     colour = 1
     data_comm = comm.split(colour, comm.rank)
     return data_comm
 
@@ -104,8 +108,8 @@ def main():
     # These two lines help with memory. If they are not included training runs out of memory.
     # Use them till you the real reason why its running out of memory
 
-    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-    cp.cuda.set_allocator(pool.malloc)
+    # pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    # cp.cuda.set_allocator(pool.malloc)
     chainer.disable_experimental_feature_warning = True
 
     models = {
@@ -131,8 +135,21 @@ def main():
     p.start()
     p.join()
 
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+
+    # Create new output dirs
+    try:
+        os.makedirs(out)
+    except OSError:
+        pass
+
     # Prepare ChainerMN communicator.
-    comm = chainermn.create_communicator("pure_nccl")
+    comm = chainermnx.create_communicator("filter_nccl", out)
     local_comm = create_local_comm(comm)
     data_comm = create_data_comm(comm)
     device = comm.intra_rank
@@ -149,6 +166,9 @@ def main():
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
+    comm._init_comms()
+    local_comm._init_comms()
+    data_comm._init_comms()
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
@@ -175,31 +195,34 @@ def main():
         local_comm)
 
     # optimizer = chainer.optimizers.Adam()
-    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), data_comm)
-
+    # We need a multinode optimiser so that we can perform gradient allreduce like for data parallelism
+    # Using chainmermnx in order to log the allreduce times
+    # optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), data_comm)
+    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, out)
     optimizer.setup(model)
 
-    # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (10, 'epoch'), out)
+    #TODO
+    # Remember to change this updater to the stardard updater not chainermnx
+    # You put this in oder to measure compute and data load time
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
-    # Since I need to measure timer per epoch, I avoid evaluation and just train the model
-    # By setting the evaluation epoch high, this will not be triggered when i am running few epochs
-    trainer.extend(evaluator, trigger=(epochs, 'epoch'))
+    trainer.extend(evaluator, trigger=val_interval)
 
     # Some display and output extensions are necessary only for one worker.
-
-    val_interval = (1, 'epoch')
-    log_interval = (1, 'epoch')
-
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
 
+    # Some display and output extensions are necessary only for one worker.
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
-        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        trainer.extend(extensions.ProgressBar(update_interval=10))
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
@@ -207,9 +230,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
-
-    # TODO : Figure out how to send this report to a file
+        trainer.extend(extensions.ProgressBar())
 
     if comm.rank == 0:
         print("Starting training .....")

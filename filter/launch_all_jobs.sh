@@ -3,7 +3,7 @@
 # Filter Parallelism jobs
 
 ##  Alexnet
-##
+
 #qsub -g gaa50004 scripts/alexnet/alexnet_2.sh
 #qsub -g gaa50004 scripts/alexnet/alexnet_4.sh
 #qsub -g gaa50004 scripts/alexnet/alexnet_8.sh
@@ -32,9 +32,9 @@ qsub -g gaa50004 scripts/resnet/resnet_64.sh
 ##### full jobs
 #
 #qsub -g gaa50004 scripts/alexnet/alexnet_full.sh
-#
+
 #qsub -g gaa50004 scripts/vgg/vgg_full.sh
-#
+
 #qsub -g gaa50004 scripts/resnet/resnet_full.sh
 
 

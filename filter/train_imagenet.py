@@ -5,6 +5,7 @@ import argparse
 import multiprocessing
 import random
 import shutil
+import os
 
 
 import numpy as np
@@ -114,8 +115,14 @@ def main():
     except OSError as e:
         print("Error: %s - %s." % (e.filename, e.strerror))
 
+    # Create new output dirs
+    try:
+        os.makedirs(out)
+    except OSError:
+        pass
+
     # Prepare ChainerMN communicator.
-    comm = chainermnx.create_communicator("filter_nccl")
+    comm = chainermnx.create_communicator("filter_nccl", out)
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -154,16 +161,15 @@ def main():
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
     trainer = training.Trainer(updater, (epochs, 'iteration'), out)
+
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
-    # Since I need to measure timer per epoch, I avoid evaluation and just train the model
-    # By setting the evaluation epoch high, this will not be triggered when i am running few epochs
-    trainer.extend(evaluator, trigger=(20, 'epoch'))
-    val_interval = (1, 'epoch')
-    log_interval = (1, 'iteration')
+    trainer.extend(evaluator, trigger=val_interval)
 
     # Some display and output extensions are necessary only for one worker.
 

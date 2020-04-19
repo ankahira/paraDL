@@ -84,7 +84,8 @@ class ResNet50(chainer.Chain):
             self.res3 = Block(self.comm, 4, 256, 128, 512)
             self.res4 = Block(self.comm, 6, 512, 256, 1024)
             self.res5 = Block(self.comm, 3, 1024, 512, 2048)
-            self.fc = FilterParallelFC(self.comm, 2048, 1000)
+
+            self.fc = L.Linear(2048, 1000)
 
     def __call__(self, x):
         h = self.bn1(self.conv1(x))

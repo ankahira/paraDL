@@ -19,10 +19,6 @@ class AlexNet(chainer.Chain):
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)
-            # Removed temporary
-            # self.fc6 = FilterParallelFC(comm, None, 4096)
-            # self.fc7 = FilterParallelFC(comm, None, 4096)
-            # self.fc8 = FilterParallelFC(comm, None, 1000)
 
     def forward(self, x):
         h = F.relu(self.conv1(x))
