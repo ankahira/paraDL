@@ -94,12 +94,7 @@ def create_data_comm(comm):
     :arg: comm
     :return data comm
     """
-    colour = comm.rank % 4
-
-    # if comm.rank % 4 == 0:
-    #     colour = 0
-    # else:
-    #     colour = 1
+    colour = comm.rank % 2
     data_comm = comm.split(colour, comm.rank)
     return data_comm
 
@@ -108,8 +103,8 @@ def main():
     # These two lines help with memory. If they are not included training runs out of memory.
     # Use them till you the real reason why its running out of memory
 
-    # pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-    # cp.cuda.set_allocator(pool.malloc)
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
     chainer.disable_experimental_feature_warning = True
 
     models = {

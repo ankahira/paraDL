@@ -2,7 +2,7 @@
 #$ -cwd
 #$ -l rt_F=2
 #$ -l h_rt=01:00:00
-#$ -N vgg_8
+#$ -N resnet_8
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y
 
@@ -12,7 +12,8 @@ conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 8 --hostfile $SGE_JOB_HOSTLIST --oversubscribe python train_imagenet.py  --model=vgg  --batchsize=32  --epochs=1  --out="results/vgg/8"
+mpiexec -n 4 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet  --batchsize=64  --epochs=1  --out="results/resnet/4"
+
 
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 #$ -cwd
-#$ -l rt_F=32
+#$ -l rt_F=64
 #$ -l h_rt=01:00:00
 #$ -N resnet_128
 #$ -o $JOB_ID.$JOB_NAME.log

@@ -1,6 +1,6 @@
 #!/bin/bash
 #$ -cwd
-#$ -l rt_F=256
+#$ -l rt_F=512
 #$ -l h_rt=01:00:00
 #$ -N vgg_1024
 #$ -o $JOB_ID.$JOB_NAME.log
