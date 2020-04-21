@@ -15,7 +15,7 @@ class CosmoFlow(Chain):
             self.Conv4 = ChannelParallelConvolution3D(comm, in_channels=64, out_channels=128, ksize=3, stride=1)
             self.Conv5 = ChannelParallelConvolution3D(comm, in_channels=128, out_channels=256, ksize=2, stride=1)
             self.Conv6 = ChannelParallelConvolution3D(comm, in_channels=256, out_channels=256, ksize=2, stride=1)
-            self.Conv7 = ChannelParallelConvolution3D(comm,in_channels=256, out_channels=128, ksize=2, stride=1)
+            self.Conv7 = ChannelParallelConvolution3D(comm, in_channels=256, out_channels=128, ksize=2, stride=1)
             self.FC1 = ChannelParallelFC(comm, None, 2048)
             self.FC2 = ChannelParallelFC(comm, 2048, 256)
             self.Output = ChannelParallelFC(comm, 256, 4)

@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -l rt_F=64
-#$ -l h_rt=02:00:00
+#$ -l h_rt=04:00:00
 #$ -N vgg_128
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y

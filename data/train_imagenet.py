@@ -137,8 +137,8 @@ def main():
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20, shuffle=True)
-    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False)
+    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True)
+    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=80, repeat=False)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, out)
@@ -148,9 +148,9 @@ def main():
     # Remember to change this updater to the stardard updater not chainermnx
     # You put this in oder to measure compute and data load time
 
-    # updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
+    # updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (10, 'epoch')
     log_interval = (1, 'iteration')

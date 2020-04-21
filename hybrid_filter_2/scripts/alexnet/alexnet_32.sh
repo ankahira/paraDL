@@ -1,7 +1,7 @@
 #!/bin/bash
 #$ -cwd
 #$ -l rt_F=16
-#$ -l h_rt=02:00:00
+#$ -l h_rt=10:00:00
 #$ -N alexnet_32
 #$ -o $JOB_ID.$JOB_NAME.log
 #$ -j y

@@ -24,7 +24,6 @@ def create_paths_list(dir):
 
 
 class CosmoDataset(DatasetMixin):
-
     def __init__(self, root='.', dtype=None):
         file_names = create_paths_list(root)
         paths = [path.strip() for path in file_names]

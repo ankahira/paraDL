@@ -92,35 +92,35 @@ def main():
         train = chainermn.datasets.create_empty_dataset(train)
         # val = chainermn.datasets.create_empty_dataset(val)
 
-    train_iterator = chainermn.iterators.create_multi_node_iterator(
-        chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20, shuffle=True), local_comm)
-    # vali_iterator = chainermn.iterators.create_multi_node_iterator(
-    #     chainer.iterators.MultithreadIterator(val, batch_size, repeat=False, shuffle=False, n_threads=20),
-    #     local_comm)
+    # Use the modified multinode iterator that makes sure Y has the correct values
+    train_iterator = chainermnx.iterators.create_multi_node_iterator(
+        chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True), comm)
 
-    model = CosmoFlow(local_comm)
-    # model = L.Classifier(model, lossfun=F.mean_squared_error, accfun=F.mean_squared_error)
+    model = CosmoFlow(local_comm, out)
 
-    # print("Model Created successfully")
     ch.backends.cuda.get_device_from_id(device).use()
     model.to_gpu()  # Copy the model to the GPU
 
-    optimizer = chainermnx.create_hybrid_multi_node_optimizer_alpha(chainer.optimizers.Adam(), data_comm, local_comm)
+    optimizer = chainermnx.create_hybrid_multi_node_optimizer(actual_optimizer=chainer.optimizers.Adam(),
+                                                              global_communicator=data_comm,
+                                                              local_communicator=local_comm, out=out)
 
     optimizer.setup(model)
     # Create the updater, using the optimizer
-    updater = training.StandardUpdater(train_iterator, optimizer, device=device)
+    # updater = training.StandardUpdater(train_iterator, optimizer, device=device)
+    updater = chainermnx.training.StandardUpdater(iterator=train_iterator, optimizer=optimizer, comm=comm, out=out, device=device)
 
     # Set up a trainer
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out=out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out=out)
     # trainer.extend(extensions.Evaluator(vali_iterator, model, device=device))
 
+    log_interval = (1, 'iteration')
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
-    log_interval = (1, 'epoch')
+
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
-        trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
@@ -128,15 +128,13 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar())
 
-        trainer.extend(extensions.ProgressBar(update_interval=1))
-        print("Starting Training ")
+    if comm.rank == 0:
+        print("Starting training .....")
 
     trainer.run()
 
 
 if __name__ == "__main__":
-
     main()
-
-

@@ -4,6 +4,8 @@ import sys
 import numpy
 import argparse
 import random
+import os
+import shutil
 
 import numpy as np
 import chainer.backends.cuda
@@ -93,6 +95,21 @@ def main():
     epochs = args.epochs
     out = args.out
 
+    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+
+    # Create new output dirs
+    try:
+        os.makedirs(out)
+    except OSError:
+        pass
+
     # Prepare ChainerMN communicator.
     comm = chainermnx.create_communicator("spatial_nccl")
     device = comm.intra_rank
@@ -105,7 +122,7 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](comm))
+    model = L.Classifier(models[args.model](comm, out))
     # model = models[args.model](comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
@@ -130,24 +147,24 @@ def main():
     # Datasets of worker 0 are evenly split and distributed to all workers.
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    optimizer = chainermnx.create_spatial_optimizer(chainer.optimizers.Adam(), comm)
+    optimizer = chainermnx.create_spatial_optimizer(chainer.optimizers.Adam(), comm, out)
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    # updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
     trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (1, 'epoch')
-    log_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)
     evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
     trainer.extend(evaluator, trigger=val_interval)
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
+        # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
-        trainer.extend(extensions.observe_lr(), trigger=log_interval)
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
@@ -155,7 +172,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar(update_interval=100))
+        trainer.extend(extensions.ProgressBar(update_interval=1))
 
     if comm.rank == 0:
         print("Starting training .....")
