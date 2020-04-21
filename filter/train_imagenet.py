@@ -175,7 +175,7 @@ def main():
 
     # Some display and output extensions are necessary only for one worker.
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
+        # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
         trainer.extend(extensions.ProgressBar(update_interval=10))

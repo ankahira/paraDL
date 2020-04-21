@@ -12,7 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 128 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=alexnet  --batchsize=512  --epochs=3  --out="results/alexnet/128"
+mpiexec -n 128 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=alexnet  --batchsize=512  --epochs=100  --out="results/alexnet/128"
 
 
 

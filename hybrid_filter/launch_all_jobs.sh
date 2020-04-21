@@ -4,25 +4,25 @@
 
 ## Alexnet
 
-#qsub -g gaa50004 scripts/alexnet/alexnet_8.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_16.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_32.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_64.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_128.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_256.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_512.sh
-#qsub -g gaa50004 scripts/alexnet/alexnet_1024.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_8.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_16.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_32.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_64.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_128.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_256.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_512.sh
+qsub -g gaa50004 scripts/alexnet/alexnet_1024.sh
 
 ### VGG
 
-#qsub -g gaa50004 scripts/vgg/vgg_8.sh
-#qsub -g gaa50004 scripts/vgg/vgg_16.sh
-#qsub -g gaa50004 scripts/vgg/vgg_32.sh
-#qsub -g gaa50004 scripts/vgg/vgg_64.sh
-#qsub -g gaa50004 scripts/vgg/vgg_128.sh
-#qsub -g gaa50004 scripts/vgg/vgg_256.sh
-#qsub -g gaa50004 scripts/vgg/vgg_512.sh
-#qsub -g gaa50004 scripts/vgg/vgg_1024.sh
+qsub -g gaa50004 scripts/vgg/vgg_8.sh
+qsub -g gaa50004 scripts/vgg/vgg_16.sh
+qsub -g gaa50004 scripts/vgg/vgg_32.sh
+qsub -g gaa50004 scripts/vgg/vgg_64.sh
+qsub -g gaa50004 scripts/vgg/vgg_128.sh
+qsub -g gaa50004 scripts/vgg/vgg_256.sh
+qsub -g gaa50004 scripts/vgg/vgg_512.sh
+qsub -g gaa50004 scripts/vgg/vgg_1024.sh
 
 ## Resnet
 

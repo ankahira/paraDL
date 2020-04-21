@@ -12,7 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 2 --hostfile $SGE_JOB_HOSTLIST --oversubscribe python train_imagenet.py  --model=vgg  --batchsize=32  --epochs=10  --out="results/vgg/2"
+mpiexec -n 2 --hostfile $SGE_JOB_HOSTLIST --oversubscribe python train_imagenet.py  --model=vgg  --batchsize=32  --epochs=100  --out="results/vgg/2"
 
 
 

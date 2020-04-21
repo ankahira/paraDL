@@ -12,7 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 512 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet  --batchsize=64  --epochs=1  --out="results/resnet/512"
+mpiexec -n 512 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet  --batchsize=64  --epochs=100  --out="results/resnet/512"
 
 
 

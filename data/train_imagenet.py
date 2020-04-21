@@ -89,11 +89,11 @@ def main():
     epochs = args.epochs
     out = args.out
 
-    # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
-    # multiprocessing.set_start_method('forkserver')
-    # p = multiprocessing.Process()
-    # p.start()
-    # p.join()
+    #Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
+    multiprocessing.set_start_method('forkserver')
+    p = multiprocessing.Process()
+    p.start()
+    p.join()
 
     # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
 
@@ -152,7 +152,7 @@ def main():
     # updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
-    val_interval = (10, 'epoch')
+    val_interval = (100, 'epoch')
     log_interval = (1, 'iteration')
 
     # Create a multi node evaluator from an evaluator.
@@ -175,7 +175,7 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if comm.rank == 0:
         print("Starting training .....")
