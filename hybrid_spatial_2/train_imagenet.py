@@ -220,6 +220,8 @@ def main():
         print("Starting training .....")
 
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == '__main__':

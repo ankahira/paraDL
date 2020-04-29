@@ -10,6 +10,8 @@ import chainer
 from datetime import datetime
 import chainer.functions as F
 import chainer.links as L
+import shutil
+import os
 
 
 # Local imports
@@ -69,6 +71,20 @@ def main():
     batch_size = args.batchsize
     epochs = args.epochs
     out = args.out
+    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+
+    # Create new output dirs
+    try:
+        os.makedirs(out)
+    except OSError:
+        pass
 
     # Prepare communicators  communicator.
     comm = chainermnx.create_communicator("spatial_hybrid_nccl")
@@ -134,6 +150,8 @@ def main():
         print("Starting training .....")
 
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == "__main__":

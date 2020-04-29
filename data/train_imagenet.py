@@ -94,18 +94,6 @@ def main():
     p = multiprocessing.Process()
     p.start()
     p.join()
-
-    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
-
-    # Directories are created later by the reporter.
-
-    try:
-        shutil.rmtree(out)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
-
-
-
     # Prepare ChainerMN communicator.
     comm = chainermnx.create_communicator("pure_nccl")
     device = comm.intra_rank
@@ -117,7 +105,12 @@ def main():
         print('Minibatch-size: {}'.format(batch_size))
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
-
+        # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+        # Directories are created later by the reporter.
+        try:
+            shutil.rmtree(out)
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
     # model = models[args.model]()
     model = L.Classifier(models[args.model]())
 
@@ -181,6 +174,9 @@ def main():
         print("Starting training .....")
 
     trainer.run()
+
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == '__main__':

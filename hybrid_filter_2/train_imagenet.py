@@ -130,19 +130,6 @@ def main():
     p.start()
     p.join()
 
-    # Directories are created later by the reporter.
-
-    try:
-        shutil.rmtree(out)
-    except OSError as e:
-        print("Error: %s - %s." % (e.filename, e.strerror))
-
-    # Create new output dirs
-    try:
-        os.makedirs(out)
-    except OSError:
-        pass
-
     # Prepare ChainerMN communicator.
     comm = chainermnx.create_communicator("filter_nccl", out)
     local_comm = create_local_comm(comm)
@@ -156,6 +143,17 @@ def main():
         print('Minibatch-size: {}'.format(batch_size))
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
+        # Directories are created later by the reporter.
+        try:
+            shutil.rmtree(out)
+        except OSError as e:
+            print("Error: %s - %s." % (e.filename, e.strerror))
+
+        # Create new output dirs
+        try:
+            os.makedirs(out)
+        except OSError:
+            pass
 
     model = L.Classifier(models[args.model](local_comm))
 
@@ -225,12 +223,14 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
+        trainer.extend(extensions.ProgressBar(update_interval=100))
 
     if comm.rank == 0:
         print("Starting training .....")
 
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == '__main__':

@@ -195,6 +195,8 @@ def main():
     # hook = TimerHook()
     # with hook:
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
     # if comm.rank == 0:
     #     hook.print_report()

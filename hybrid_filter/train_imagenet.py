@@ -205,7 +205,7 @@ def main():
     # Remember to change this updater to the stardard updater not chainermnx
     # You put this in oder to measure compute and data load time
     updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (1, 'epoch')
     log_interval = (1, 'iteration')
@@ -236,6 +236,8 @@ def main():
         print("Starting training .....")
 
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == '__main__':

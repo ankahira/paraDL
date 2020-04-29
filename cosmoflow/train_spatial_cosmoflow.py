@@ -46,12 +46,10 @@ def main():
     # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
 
     # Directories are created later by the reporter.
-
     try:
         shutil.rmtree(out)
     except OSError as e:
         print("Error: %s - %s." % (e.filename, e.strerror))
-
     # Create new output dirs
     try:
         os.makedirs(out)
@@ -63,7 +61,6 @@ def main():
 
     # Input data and label
     train = CosmoDataset("/groups2/gaa50004/cosmoflow_data")
-    # train = temp_data_prep()
 
     if comm.rank != 0:
         train = chainermn.datasets.create_empty_dataset(train)
@@ -117,6 +114,8 @@ def main():
         print("Starting training .....")
 
     trainer.run()
+    if comm.rank == 0:
+        print("Finished")
 
 
 if __name__ == "__main__":

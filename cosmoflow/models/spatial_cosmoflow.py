@@ -15,6 +15,10 @@ class CosmoFlow(Chain):
         self.comm = comm
         self.n_proc = self.comm.size
         self.out = out
+        #TODO
+        # You need to find a way to pass two comms to the allgather.
+        # Otherwise each rank prints to file and there is an overwrite.
+        # Alternatively, name the log files with ip addresses of nodes.
         super(CosmoFlow, self).__init__()
         with self.init_scope():
             self.Conv1 = SpatialConvolution3D(comm=comm, out=self.out, index=1, in_channels=4, out_channels=16, ksize=3, stride=1, nobias=True)
@@ -31,7 +35,6 @@ class CosmoFlow(Chain):
             self.Output = L.Linear(None, 4)
 
     def forward(self, x, y):
-        # I think we need to do bcast because only one rank loads data and others dont have y values.        #
         partions = cp.array_split(x, self.comm.size, -2)
         # This part needs fixing. Probably all conditions are not checked
         if self.comm.rank == 0:
@@ -44,7 +47,6 @@ class CosmoFlow(Chain):
             x = partions[3]
         else:
             print("Rank does not exist")
-        # y = chainermn.functions.bcast(self.comm, y, 0)
         h = FX.halo_exchange_3d(self.comm, x, k_size=3, index=1, pad=0, out=self.out)
         h = F.leaky_relu(self.Conv1(h))
         h = F.average_pooling_3d(h, ksize=2, stride=2)
