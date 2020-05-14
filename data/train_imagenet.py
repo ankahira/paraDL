@@ -107,6 +107,8 @@ def main():
         print('==========================================')
         # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
         # Directories are created later by the reporter.
+        #TODO
+        # Change and use pathlib for this part
         try:
             shutil.rmtree(out)
         except OSError as e:

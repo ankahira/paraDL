@@ -198,7 +198,7 @@ def main():
     
     """
 
-    optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm, out=out)
+    optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), comm,  data_comm, local_comm, out=out)
     optimizer.setup(model)
 
     # Set up a trainer
