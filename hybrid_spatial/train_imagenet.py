@@ -157,7 +157,7 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](local_comm, out))
+    model = L.Classifier(models[args.model](comm, local_comm, out))
     chainer.cuda.get_device_from_id(device).use()
     model.to_gpu(device)
     comm._init_comms()

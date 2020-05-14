@@ -9,29 +9,30 @@ import chainermnx
 
 
 class VGG(chainer.Chain):
-    def __init__(self, comm, out):
+    def __init__(self, original_comm, local_comm, out):
         super(VGG, self).__init__()
-        self.comm = comm
+        self.comm = local_comm
+        self.original_comm = original_comm
         self.out = out
         self.n_proc = self.comm.size
         with self.init_scope():
-            self.conv1_1 = LX.Convolution2D(comm, self.out, 1, 3, 64, 3, pad=(0, 1))
-            self.conv1_2 = LX.Convolution2D(comm, self.out, 2, 64, 64, 3, pad=(0, 1))
+            self.conv1_1 = LX.Convolution2D(self.comm, self.out, 1, 3, 64, 3, pad=(0, 1))
+            self.conv1_2 = LX.Convolution2D(self.comm, self.out, 2, 64, 64, 3, pad=(0, 1))
 
-            self.conv2_1 = LX.Convolution2D(comm, self.out, 3, 64, 128, 3, pad=(0, 1))
-            self.conv2_2 = LX.Convolution2D(comm, self.out, 4, 128, 128, 3, pad=(0, 1))
+            self.conv2_1 = LX.Convolution2D(self.comm, self.out, 3, 64, 128, 3, pad=(0, 1))
+            self.conv2_2 = LX.Convolution2D(self.comm, self.out, 4, 128, 128, 3, pad=(0, 1))
 
-            self.conv3_1 = LX.Convolution2D(comm, self.out, 5, 128, 256, 3, pad=(0, 1))
-            self.conv3_2 = LX.Convolution2D(comm, self.out, 6, 256, 256, 3, pad=(0, 1))
-            self.conv3_3 = LX.Convolution2D(comm, self.out, 7, 256, 256, 3, pad=(0, 1))
+            self.conv3_1 = LX.Convolution2D(self.comm, self.out, 5, 128, 256, 3, pad=(0, 1))
+            self.conv3_2 = LX.Convolution2D(self.comm, self.out, 6, 256, 256, 3, pad=(0, 1))
+            self.conv3_3 = LX.Convolution2D(self.comm, self.out, 7, 256, 256, 3, pad=(0, 1))
 
-            self.conv4_1 = LX.Convolution2D(comm, self.out, 8, 256, 512, 3, pad=(0, 1))
-            self.conv4_2 = LX.Convolution2D(comm, self.out, 9, 512, 512, 3, pad=(0, 1))
-            self.conv4_3 = LX.Convolution2D(comm, self.out, 10, 512, 512, 3, pad=(0, 1))
+            self.conv4_1 = LX.Convolution2D(self.comm, self.out, 8, 256, 512, 3, pad=(0, 1))
+            self.conv4_2 = LX.Convolution2D(self.comm, self.out, 9, 512, 512, 3, pad=(0, 1))
+            self.conv4_3 = LX.Convolution2D(self.comm, self.out, 10, 512, 512, 3, pad=(0, 1))
 
-            self.conv5_1 = LX.Convolution2D(comm, self.out, 11, 512, 512, 3, pad=(0, 1))
-            self.conv5_2 = LX.Convolution2D(comm, self.out, 12, 512, 512, 3, pad=(0, 1))
-            self.conv5_3 = LX.Convolution2D(comm, self.out, 13, 512, 512, 3, pad=(0, 1))
+            self.conv5_1 = LX.Convolution2D(self.comm, self.out, 11, 512, 512, 3, pad=(0, 1))
+            self.conv5_2 = LX.Convolution2D(self.comm, self.out, 12, 512, 512, 3, pad=(0, 1))
+            self.conv5_3 = LX.Convolution2D(self.comm, self.out, 13, 512, 512, 3, pad=(0, 1))
 
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(4096, 4096)
@@ -91,7 +92,7 @@ class VGG(chainer.Chain):
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=15)
         h = F.max_pooling_2d(h, 2, 2)
 
-        hs = chainermnx.functions.spatialallgather(self.comm, h, self.out)
+        hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
         h = F.concat(hs, -2)
 
         h = F.dropout(F.relu(self.fc6(h)))

@@ -96,9 +96,10 @@ class Block(chainer.ChainList):
 
 
 class ResNet50(chainer.Chain):
-    def __init__(self, comm, out):
+    def __init__(self, original_comm, local_comm, out):
         super(ResNet50, self).__init__()
-        self.comm = comm
+        self.comm = local_comm
+        self.original_comm = original_comm
         self.out = out
         with self.init_scope():
             self.conv1 = LX.Convolution2D(self.comm, self.out, 1, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
@@ -110,7 +111,6 @@ class ResNet50(chainer.Chain):
             self.fc = L.Linear(None, 1000)
 
     def __call__(self, x):
-
         partions = cp.array_split(x, self.comm.size, -2)
         if self.comm.rank == 0:
             x = partions[0]
@@ -130,7 +130,7 @@ class ResNet50(chainer.Chain):
         h = self.res3(h)
         h = self.res4(h)
         h = self.res5(h)
-        hs = chainermnx.functions.spatialallgather(self.comm, h, self.out)
+        hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
         h = F.concat(hs, -2)
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
