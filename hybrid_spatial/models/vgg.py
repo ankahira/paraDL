@@ -39,6 +39,10 @@ class VGG(chainer.Chain):
             self.fc8 = L.Linear(4096, 1000)
 
     def forward(self, x):
+
+        #TODO
+        # Revisit halo exchange for Pooling. I am not passing two comms for now. We just wanna measure communication
+        # time for conv layers
         partions = cp.array_split(x, self.comm.size, -2)
         if self.comm.rank == 0:
             x = partions[0]
@@ -51,43 +55,43 @@ class VGG(chainer.Chain):
         else:
             print("Rank does not exist")
 
-        h = FX.halo_exchange(self.comm, x, k_size=3, index=11, pad=1,  out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=3, index=11, pad=1,  out=self.out)
         h = F.relu(self.conv1_1(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=12, pad=1 , out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=12, pad=1, out=self.out)
         h = F.relu(self.conv1_2(h))
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=11)
         h = F.max_pooling_2d(h, 2, 2)
 
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=21, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=21, pad=1, out=self.out)
         h = F.relu(self.conv2_1(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=22, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=22, pad=1, out=self.out)
         h = F.relu(self.conv2_2(h))
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=12)
         h = F.max_pooling_2d(h, 2, 2)
 
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=31, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=31, pad=1, out=self.out)
         h = F.relu(self.conv3_1(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=32, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=32, pad=1, out=self.out)
         h = F.relu(self.conv3_2(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=33, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=33, pad=1, out=self.out)
         h = F.relu(self.conv3_3(h))
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=13)
         h = F.max_pooling_2d(h, 2, 2)
 
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=41, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=41, pad=1, out=self.out)
         h = F.relu(self.conv4_1(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=42, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=42, pad=1, out=self.out)
         h = F.relu(self.conv4_2(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=43, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=43, pad=1, out=self.out)
         h = F.relu(self.conv4_3(h))
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=14)
         h = F.max_pooling_2d(h, 2, 2)
 
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=51, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=51, pad=1, out=self.out)
         h = F.relu(self.conv5_1(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=52, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=52, pad=1, out=self.out)
         h = F.relu(self.conv5_2(h))
-        h = FX.halo_exchange(self.comm, h, k_size=3, index=53, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=53, pad=1, out=self.out)
         h = F.relu(self.conv5_3(h))
         h = FX.pooling_halo_exchange(self.comm, h, k_size=2, index=15)
         h = F.max_pooling_2d(h, 2, 2)
