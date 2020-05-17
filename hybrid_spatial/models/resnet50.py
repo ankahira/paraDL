@@ -27,14 +27,14 @@ class BottleNeckA(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = LX.Convolution2D(self.comm, self.out, 34, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 34, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = LX.Convolution2D(self.comm, self.out, 54, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 54, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = LX.Convolution2D(self.comm, self.out, 43, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 43, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(out_size)
 
-            self.conv4 = LX.Convolution2D(self.comm, self.out, 34, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv4 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 34, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
@@ -64,11 +64,11 @@ class BottleNeckB(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = LX.Convolution2D(self.comm, self.out,  65, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out,  65, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = LX.Convolution2D(self.comm, self.out, 66, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 66, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = LX.Convolution2D(self.comm, self.out, 67, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 67, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
             self.bn3 = L.BatchNormalization(in_size)
 
     def __call__(self, x):
@@ -106,7 +106,7 @@ class ResNet50(chainer.Chain):
         self.original_comm = original_comm
         self.out = out
         with self.init_scope():
-            self.conv1 = LX.Convolution2D(self.comm, self.out, 1, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 1, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
             self.bn1 = L.BatchNormalization(64)
             self.res2 = Block(self.original_comm, self.comm, self.out, 3, 64, 64, 256, 1)
             self.res3 = Block(self.original_comm, self.comm, self.out, 4, 256, 128, 512)
