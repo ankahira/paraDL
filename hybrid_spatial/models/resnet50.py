@@ -17,6 +17,8 @@ some pad regions were modified, make sure they are exactly the same as data para
 
 """
 
+INDICES = list(range(1, 60))
+
 
 class BottleNeckA(chainer.Chain):
     def __init__(self, original_comm, comm, out, in_size, ch, out_size, stride=2):
@@ -27,30 +29,30 @@ class BottleNeckA(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 34, in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], in_size, ch, 1, stride, 0, initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 54, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], ch, ch, 3, 1, (0, 1), initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 43, ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], ch, out_size, 1, 1, 0, initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn3 = L.BatchNormalization(out_size)
 
-            self.conv4 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 34, in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
+            self.conv4 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], in_size, out_size, 1, stride, 0, initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
         h1 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=1, pad=0, out=self.out)
         h1 = F.relu(self.bn1(self.conv1(h1)))
-        #TODO
-        # revisit this step and fix the size k_size of halo exchange.
-
-        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=1, index=2, pad=1, out=self.out)
+        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=3, index=2, pad=1, out=self.out)
         h1 = F.relu(self.bn2(self.conv2(h1)))
         h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=1, index=3, pad=0, out=self.out)
         h1 = self.bn3(self.conv3(h1))
 
         h2 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=4, pad=0, out=self.out)
         h2 = self.bn4(self.conv4(h2))
-
         return F.relu(h1 + h2)
 
 
@@ -64,17 +66,20 @@ class BottleNeckB(chainer.Chain):
         initialW = initializers.HeNormal()
 
         with self.init_scope():
-            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out,  65, in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out,  INDICES[0], in_size, ch, 1, 1, 0, initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn1 = L.BatchNormalization(ch)
-            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 66, ch, ch, 3, 1, 1, initialW=initialW, nobias=True)
+            self.conv2 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], ch, ch, 3, 1, (0, 1), initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn2 = L.BatchNormalization(ch)
-            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 67, ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
+            self.conv3 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], ch, in_size, 1, 1, 0, initialW=initialW, nobias=True)
+            del INDICES[0]
             self.bn3 = L.BatchNormalization(in_size)
 
     def __call__(self, x):
-        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=5, pad=0, out=self.out)
-        h = F.relu(self.bn1(self.conv1(h)))
-        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=1, index=6, pad=1, out=self.out)
+        x = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=5, pad=0, out=self.out)
+        h = F.relu(self.bn1(self.conv1(x)))
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=6, pad=1, out=self.out)
         h = F.relu(self.bn2(self.conv2(h)))
         h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=1, index=7, pad=0, out=self.out)
         h = self.bn3(self.conv3(h))
@@ -106,7 +111,8 @@ class ResNet50(chainer.Chain):
         self.original_comm = original_comm
         self.out = out
         with self.init_scope():
-            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, 1, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            del INDICES[0]
             self.bn1 = L.BatchNormalization(64)
             self.res2 = Block(self.original_comm, self.comm, self.out, 3, 64, 64, 256, 1)
             self.res3 = Block(self.original_comm, self.comm, self.out, 4, 256, 128, 512)
