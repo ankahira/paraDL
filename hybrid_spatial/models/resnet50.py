@@ -18,6 +18,7 @@ some pad regions were modified, make sure they are exactly the same as data para
 """
 
 INDICES = list(range(1, 60))
+FORWARD_INDICES = list(range(1, 100))
 
 
 class BottleNeckA(chainer.Chain):
@@ -44,14 +45,18 @@ class BottleNeckA(chainer.Chain):
             self.bn4 = L.BatchNormalization(out_size)
 
     def __call__(self, x):
-        h1 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=1, pad=0, out=self.out)
+        global FORWARD_INDICES
+        h1 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=FORWARD_INDICES[0], pad=0, out=self.out)
+        del FORWARD_INDICES[0]
         h1 = F.relu(self.bn1(self.conv1(h1)))
-        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=3, index=2, pad=1, out=self.out)
+        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=3, index=FORWARD_INDICES[0], pad=1, out=self.out)
+        del FORWARD_INDICES[0]
         h1 = F.relu(self.bn2(self.conv2(h1)))
-        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=1, index=3, pad=0, out=self.out)
+        h1 = FX.halo_exchange(self.original_comm, self.comm, h1, k_size=1, index=FORWARD_INDICES[0], pad=0, out=self.out)
+        del FORWARD_INDICES[0]
         h1 = self.bn3(self.conv3(h1))
-
-        h2 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=4, pad=0, out=self.out)
+        h2 = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=FORWARD_INDICES[0], pad=0, out=self.out)
+        del FORWARD_INDICES[0]
         h2 = self.bn4(self.conv4(h2))
         return F.relu(h1 + h2)
 
@@ -77,13 +82,16 @@ class BottleNeckB(chainer.Chain):
             self.bn3 = L.BatchNormalization(in_size)
 
     def __call__(self, x):
-        x = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=5, pad=0, out=self.out)
+        global FORWARD_INDICES
+        x = FX.halo_exchange(self.original_comm, self.comm, x, k_size=1, index=FORWARD_INDICES[0], pad=0, out=self.out)
+        del FORWARD_INDICES[0]
         h = F.relu(self.bn1(self.conv1(x)))
-        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=6, pad=1, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=3, index=FORWARD_INDICES[0], pad=1, out=self.out)
+        del FORWARD_INDICES[0]
         h = F.relu(self.bn2(self.conv2(h)))
-        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=1, index=7, pad=0, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, h, k_size=1, index=FORWARD_INDICES[0], pad=0, out=self.out)
+        del FORWARD_INDICES[0]
         h = self.bn3(self.conv3(h))
-
         return F.relu(h + x)
 
 
@@ -121,6 +129,8 @@ class ResNet50(chainer.Chain):
             self.fc = L.Linear(None, 1000)
 
     def __call__(self, x):
+        global FORWARD_INDICES
+        FORWARD_INDICES = list(range(1, 100))
         partions = cp.array_split(x, self.comm.size, -2)
         if self.comm.rank == 0:
             x = partions[0]
@@ -133,7 +143,8 @@ class ResNet50(chainer.Chain):
         else:
             print("Rank does not exist")
 
-        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=7, index=9, pad=3, out=self.out)
+        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=7, index=FORWARD_INDICES[0], pad=3, out=self.out)
+        del FORWARD_INDICES[0]
         h = self.bn1(self.conv1(h))
         h = F.max_pooling_2d(F.relu(h), 3, stride=2)
         h = self.res2(h)
