@@ -75,7 +75,8 @@ def main():
     #     comm)
     # train_iterator = ch.iterators.SerialIterator(train, batch_size, shuffle=True)
     # vali_iterator = ch.iterators.SerialIterator(test, batch_size, repeat=False, shuffle=False)
-    model = CosmoFlow(comm, out)
+    model = CosmoFlow(comm, comm, out)
+
     # model = L.Classifier(CosmoFlow(comm, out), lossfun=F.mean_squared_error)
 
     # print("Model Created successfully")

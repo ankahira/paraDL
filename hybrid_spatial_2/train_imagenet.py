@@ -146,7 +146,8 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](local_comm))
+    # model = L.Classifier(models[args.model](local_comm))
+    model = L.Classifier(models[args.model](comm, local_comm, out)) ## latest one with all the logs
 
     # model = models[args.model](local_comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
@@ -187,12 +188,16 @@ def main():
      To avoid doing all reduce on all GPUs, just do on nodes. Use the data comm instead of the global comm
     
     """
-    optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm)
+    # optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, local_comm)
+    optimizer = chainermnx.create_hybrid_multi_node_optimizer(chainer.optimizers.Adam(), comm,  data_comm, local_comm, out=out)
+
+
     optimizer.setup(model)
 
     # Set up a trainer
-    updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    # updater = training.StandardUpdater(train_iter, optimizer, device=device)
+    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (100, 'epoch')
     log_interval = (1, 'epoch')
