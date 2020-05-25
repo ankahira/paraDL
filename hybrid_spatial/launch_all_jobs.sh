@@ -28,25 +28,38 @@
 
 
 
+# ## Resnet
+
+# qsub -g gaa50004 scripts/resnet/resnet_8.sh
+# sleep 200
+# qsub -g gaa50004 scripts/resnet/resnet_16.sh
+# sleep 200
+# qsub -g gaa50004 scripts/resnet/resnet_32.sh
+# sleep 200
+# qsub -g gaa50004 scripts/resnet/resnet_64.sh
+# sleep 200
+# qsub -g gaa50004 scripts/resnet/resnet_128.sh
+# sleep 200
+# qsub -g gaa50004 scripts/resnet/resnet_256.sh
+# sleep 300
+# qsub -g gaa50004 scripts/resnet/resnet_512.sh
+# sleep 700
+# qsub -g gaa50004 scripts/resnet/resnet_1024.sh
+
 ## Resnet
 
-qsub -g gaa50004 scripts/resnet/resnet_8.sh
-sleep 200
-qsub -g gaa50004 scripts/resnet/resnet_16.sh
-sleep 200
-qsub -g gaa50004 scripts/resnet/resnet_32.sh
-sleep 200
-qsub -g gaa50004 scripts/resnet/resnet_64.sh
-sleep 200
-qsub -g gaa50004 scripts/resnet/resnet_128.sh
-sleep 200
-qsub -g gaa50004 scripts/resnet/resnet_256.sh
-sleep 300
-qsub -g gaa50004 scripts/resnet/resnet_512.sh
-sleep 700
-qsub -g gaa50004 scripts/resnet/resnet_1024.sh
-
-
+# conda activate
+# module load cuda/10.0/10.0.130 cudnn/7.6/7.6.4 nccl/2.4/2.4.8-1 openmpi/2.1.6 
+# qsub -g gaa50004 no_comm_scripts/resnet/resnet_8.sh
+# sleep 200
+# qsub -g gaa50004 no_comm_scripts/resnet/resnet_16.sh
+# sleep 200
+# qsub -g gaa50004 no_comm_scripts/resnet/resnet_32.sh
+# sleep 200
+# qsub -g gaa50004 no_comm_scripts/resnet/resnet_64.sh
+# sleep 200
+# qsub -g gaa50004 no_comm_scripts/resnet/resnet_128.sh
+# sleep 200
 
 
 

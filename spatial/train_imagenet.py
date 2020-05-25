@@ -122,7 +122,8 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](comm, out))
+    #model = L.Classifier(models[args.model](comm, out))
+    model = L.Classifier(models[args.model](comm, comm, out))
     # model = models[args.model](comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
