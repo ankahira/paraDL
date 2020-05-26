@@ -112,12 +112,13 @@ def main():
     train_iterator = chainermnx.iterators.create_multi_node_iterator(
         chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True), comm)
 
-    model = CosmoFlow(local_comm, out)
+    model = CosmoFlow(comm, local_comm, out)
 
     ch.backends.cuda.get_device_from_id(device).use()
     model.to_gpu()  # Copy the model to the GPU
 
     optimizer = chainermnx.create_hybrid_multi_node_optimizer(actual_optimizer=chainer.optimizers.Adam(),
+                                                              original_communicator=comm,
                                                               global_communicator=data_comm,
                                                               local_communicator=local_comm, out=out)
 

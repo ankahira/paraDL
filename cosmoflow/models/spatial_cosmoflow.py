@@ -11,8 +11,9 @@ import chainermn
 
 
 class CosmoFlow(Chain):
-    def __init__(self, comm, out):
-        self.comm = comm
+    def __init__(self, original_comm, local_comm, out):
+        self.comm = local_comm
+        self.original_comm = original_comm
         self.n_proc = self.comm.size
         self.out = out
         #TODO
@@ -21,8 +22,8 @@ class CosmoFlow(Chain):
         # Alternatively, name the log files with ip addresses of nodes.
         super(CosmoFlow, self).__init__()
         with self.init_scope():
-            self.Conv1 = SpatialConvolution3D(comm=comm, out=self.out, index=1, in_channels=4, out_channels=16, ksize=3, stride=1, nobias=True)
-            self.Conv2 = SpatialConvolution3D(comm=comm, out=self.out, index=2, in_channels=16, out_channels=32, ksize=3, stride=1, nobias=True)
+            self.Conv1 = SpatialConvolution3D(original_comm=self.original_comm, local_comm=self.comm, out=self.out, index=1, in_channels=4, out_channels=16, ksize=3, stride=1, nobias=True)
+            self.Conv2 = SpatialConvolution3D(original_comm=self.original_comm, local_comm=self.comm, out=self.out, index=2, in_channels=16, out_channels=32, ksize=3, stride=1, nobias=True)
 
             # Only the first 2 layers are in parallel
             self.Conv3 = Convolution3D(in_channels=32, out_channels=64, ksize=3, stride=1, pad=1, nobias=True)
@@ -53,7 +54,7 @@ class CosmoFlow(Chain):
         h = FX.halo_exchange_3d(self.comm, h, k_size=3, index=2, pad=0, out=self.out)
         h = F.leaky_relu(self.Conv2(h))
         h = F.average_pooling_3d(h, ksize=2, stride=2)
-        hs = chainermnx.functions.spatialallgather(self.comm, h, self.out)
+        hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
         h = F.concat(hs, -2)
         h = F.leaky_relu(self.Conv3(h))
         h = F.average_pooling_3d(h, ksize=2, stride=2)

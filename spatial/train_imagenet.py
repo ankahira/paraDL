@@ -122,8 +122,16 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
+<<<<<<< HEAD
     #model = L.Classifier(models[args.model](comm, out))
     model = L.Classifier(models[args.model](comm, comm, out))
+=======
+    # model = L.Classifier(models[args.model](comm, out))
+    # In reality we dont need this but I was too lazy to modify the model definitions.
+    # So I used the the model definitions from Hybrid and just pass the same communicator twice.
+    model = L.Classifier(models[args.model](comm, comm, out))
+
+>>>>>>> 3b8769c46c1ad6dd8134b484d571bc7582897627
     # model = models[args.model](comm)
     # chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     chainer.cuda.get_device_from_id(device).use()
