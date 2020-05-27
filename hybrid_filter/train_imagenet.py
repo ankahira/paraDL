@@ -162,7 +162,8 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](local_comm))
+    # model = L.Classifier(models[args.model](local_comm))
+    model = L.Classifier(models[args.model](comm, local_comm, out))
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
@@ -198,7 +199,7 @@ def main():
     # We need a multinode optimiser so that we can perform gradient allreduce like for data parallelism
     # Using chainmermnx in order to log the allreduce times
     # optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), data_comm)
-    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), data_comm, out)
+    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, data_comm, out)
     optimizer.setup(model)
 
     #TODO

@@ -15,7 +15,6 @@ class AlexNet(chainer.Chain):
             self.conv3 = FilterParallelConvolution2D(comm, None, 384, 3, pad=1)
             self.conv4 = FilterParallelConvolution2D(comm, None, 384, 3, pad=1)
             self.conv5 = FilterParallelConvolution2D(comm, None, 256, 3, pad=1)
-
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)

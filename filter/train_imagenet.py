@@ -133,7 +133,11 @@ def main():
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
 
-    model = L.Classifier(models[args.model](comm))
+    # model = L.Classifier(models[args.model](comm))
+
+    # This not required but its faster than changing the model implementations.
+    # So I just copied the model implemenations from hybrid.
+    model = L.Classifier(models[args.model](comm, comm, out))
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()

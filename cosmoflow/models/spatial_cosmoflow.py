@@ -48,10 +48,10 @@ class CosmoFlow(Chain):
             x = partions[3]
         else:
             print("Rank does not exist")
-        h = FX.halo_exchange_3d(self.comm, x, k_size=3, index=1, pad=0, out=self.out)
+        h = FX.halo_exchange_3d(self.original_comm, self.comm,  x, k_size=3, index=1, pad=0, out=self.out)
         h = F.leaky_relu(self.Conv1(h))
         h = F.average_pooling_3d(h, ksize=2, stride=2)
-        h = FX.halo_exchange_3d(self.comm, h, k_size=3, index=2, pad=0, out=self.out)
+        h = FX.halo_exchange_3d(self.original_comm, self.comm,  h, k_size=3, index=2, pad=0, out=self.out)
         h = F.leaky_relu(self.Conv2(h))
         h = F.average_pooling_3d(h, ksize=2, stride=2)
         hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
