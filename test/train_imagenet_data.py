@@ -6,6 +6,7 @@ import random
 import numpy as np
 import multiprocessing
 import shutil
+import os
 
 import chainer.backends.cuda
 from chainer import training
@@ -15,6 +16,8 @@ import chainermnx
 import chainer.links as L
 from datetime import datetime
 
+from chainer.function_hooks import TimerHook
+
 
 import matplotlib
 
@@ -22,6 +25,7 @@ import matplotlib
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
+from models.simple import Simple
 matplotlib.use('Agg')
 
 # Global Variables
@@ -76,6 +80,8 @@ def main():
         'alexnet': AlexNet,
         'resnet': ResNet50,
         'vgg': VGG,
+        'simple': Simple
+
     }
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
@@ -159,6 +165,8 @@ def main():
     # Give file names data and time to prevent loosing information during reruns
 
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
+    if comm.rank == 0:
+        time_log_file = open(os.path.join(out, "function_time.log"), "a")
 
     if comm.rank == 0:
         trainer.extend(extensions.DumpGraph('main/loss'))
@@ -175,8 +183,13 @@ def main():
 
     if comm.rank == 0:
         print("Starting training .....")
+    hook = TimerHook()
 
-    trainer.run()
+    with hook:
+        trainer.run()
+
+    if comm.rank == 0:
+        hook.print_report(unit="ms", file=time_log_file)
 
     if comm.rank == 0:
         print("Finished")

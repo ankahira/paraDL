@@ -3,7 +3,7 @@
 # Data Parallelism jobs
 
 # Cosmoflow
-
+sleep 3000
 qsub -g gaa50004 scripts/cosmoflow_4.sh
 qsub -g gaa50004 scripts/cosmoflow_8.sh
 sleep 100

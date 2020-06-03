@@ -22,6 +22,7 @@ import matplotlib
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
+from models.simple import Simple
 matplotlib.use('Agg')
 
 # Global Variables
@@ -76,6 +77,8 @@ def main():
         'alexnet': AlexNet,
         'resnet': ResNet50,
         'vgg': VGG,
+        'simple': Simple,
+
     }
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
@@ -136,7 +139,6 @@ def main():
     val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=80, repeat=False)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    # This optimiser is modified to take two comms are its the same used for other parallelism strategies.
     optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, comm, out)
     optimizer.setup(model)
     # Set up a trainer

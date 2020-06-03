@@ -5,7 +5,6 @@ import argparse
 import random
 import numpy as np
 import multiprocessing
-import shutil
 
 import chainer.backends.cuda
 from chainer import training
@@ -70,8 +69,6 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
-
-
     models = {
         'alexnet': AlexNet,
         'resnet': ResNet50,
@@ -89,13 +86,14 @@ def main():
     epochs = args.epochs
     out = args.out
 
-    #Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
+    # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
     multiprocessing.set_start_method('forkserver')
     p = multiprocessing.Process()
     p.start()
     p.join()
+
     # Prepare ChainerMN communicator.
-    comm = chainermnx.create_communicator("pure_nccl")
+    comm = chainermn.create_communicator("pure_nccl")
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -105,14 +103,7 @@ def main():
         print('Minibatch-size: {}'.format(batch_size))
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
-        # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
-        # Directories are created later by the reporter.
-        #TODO
-        # Change and use pathlib for this part
-        try:
-            shutil.rmtree(out)
-        except OSError as e:
-            print("Error: %s - %s." % (e.filename, e.strerror))
+
     # model = models[args.model]()
     model = L.Classifier(models[args.model]())
 
@@ -132,24 +123,19 @@ def main():
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True)
-    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=80, repeat=False)
+    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20, shuffle=True)
+    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False, shuffle=True)
 
     # Create a multi node optimizer from a standard Chainer optimizer.
-    # This optimiser is modified to take two comms are its the same used for other parallelism strategies.
-    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, comm, out)
+    optimizer = chainermn.create_multi_node_optimizer(chainer.optimizers.Adam(), comm)
     optimizer.setup(model)
+
     # Set up a trainer
-    #TODO
-    # Remember to change this updater to the stardard updater not chainermnx
-    # You put this in oder to measure compute and data load time
+    updater = chainer.training.StandardUpdater(train_iter, optimizer, device=device)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
-    updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
-    # updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
-
-    val_interval = (100, 'epoch')
-    log_interval = (1, 'iteration')
+    val_interval = (1, 'epoch')
+    log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)
@@ -171,15 +157,12 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.ProgressBar())
 
     if comm.rank == 0:
         print("Starting training .....")
 
     trainer.run()
-
-    if comm.rank == 0:
-        print("Finished")
 
 
 if __name__ == '__main__':

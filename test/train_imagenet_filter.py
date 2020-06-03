@@ -2,30 +2,34 @@
 
 from __future__ import print_function
 import argparse
-import random
-import numpy as np
 import multiprocessing
+import random
 import shutil
+import os
+
+
+import numpy as np
+import cupy as cp
+
 
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
+from chainer.function_hooks import TimerHook, CupyMemoryProfileHook
+
 import chainermn
 import chainermnx
+
 import chainer.links as L
-from datetime import datetime
-
-
-import matplotlib
 
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
-matplotlib.use('Agg')
+from models.filter_simple import FilterSimple
+
 
 # Global Variables
-
 TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
 TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
@@ -72,10 +76,19 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 def main():
 
 
+
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+
+    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    cp.cuda.set_allocator(pool.malloc)
+
+    chainer.disable_experimental_feature_warning = True
     models = {
         'alexnet': AlexNet,
         'resnet': ResNet50,
         'vgg': VGG,
+        'filter_simple': FilterSimple,
     }
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
@@ -89,13 +102,29 @@ def main():
     epochs = args.epochs
     out = args.out
 
-    #Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
+    # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
     multiprocessing.set_start_method('forkserver')
     p = multiprocessing.Process()
     p.start()
     p.join()
+
+    # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
+
+    # Directories are created later by the reporter.
+
+    try:
+        shutil.rmtree(out)
+    except OSError as e:
+        print("Error: %s - %s." % (e.filename, e.strerror))
+
+    # Create new output dirs
+    try:
+        os.makedirs(out)
+    except OSError:
+        pass
+
     # Prepare ChainerMN communicator.
-    comm = chainermnx.create_communicator("pure_nccl")
+    comm = chainermnx.create_communicator("filter_nccl", out)
     device = comm.intra_rank
 
     if comm.rank == 0:
@@ -105,65 +134,60 @@ def main():
         print('Minibatch-size: {}'.format(batch_size))
         print('Epochs: {}'.format(args.epochs))
         print('==========================================')
-        # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
-        # Directories are created later by the reporter.
-        #TODO
-        # Change and use pathlib for this part
-        try:
-            shutil.rmtree(out)
-        except OSError as e:
-            print("Error: %s - %s." % (e.filename, e.strerror))
-    # model = models[args.model]()
-    model = L.Classifier(models[args.model]())
+
+    # model = L.Classifier(models[args.model](comm))
+
+    # This not required but its faster than changing the model implementations.
+    # So I just copied the model implemenations from hybrid.
+    model = L.Classifier(models[args.model](comm, comm, out))
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
+    comm._init_comms()
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
     mean = np.load(MEAN_FILE)
-    if comm.rank == 0:
-        train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
-        val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
-    else:
-        train = None
-        val = None
-    # model inputs come from datasets, and each process takes different mini-batches
-    train = chainermn.scatter_dataset(train, comm, shuffle=True)
-    val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True)
-    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=80, repeat=False)
+    # All ranks load the data
+    train = PreprocessedDataset(TRAIN, TRAINING_ROOT, mean, 226)
+    val = PreprocessedDataset(VAL, VALIDATION_ROOT, mean, 226, False)
 
-    # Create a multi node optimizer from a standard Chainer optimizer.
-    # This optimiser is modified to take two comms are its the same used for other parallelism strategies.
-    optimizer = chainermnx.create_multi_node_optimizer(chainer.optimizers.Adam(), comm, comm, out)
+    # Create a multinode iterator such that each rank gets the same batch
+    if comm.rank != 0:
+        train = chainermn.datasets.create_empty_dataset(train)
+        val = chainermn.datasets.create_empty_dataset(val)
+    # Same dataset in all nodes
+    train_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.MultithreadIterator(train, batch_size, n_threads=20), comm)
+    val_iter = chainermn.iterators.create_multi_node_iterator(
+        chainer.iterators.MultithreadIterator(val, batch_size, n_threads=20, repeat=False), comm)
+
+    optimizer = chainer.optimizers.Adam()
     optimizer.setup(model)
-    # Set up a trainer
-    #TODO
-    # Remember to change this updater to the stardard updater not chainermnx
-    # You put this in oder to measure compute and data load time
 
+    # Set up a trainer
     updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
-    # updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
-    val_interval = (100, 'epoch')
+    val_interval = (1, 'epoch')
     log_interval = (1, 'iteration')
 
-    # Create a multi node evaluator from an evaluator.
+    # Create an evaluator
     evaluator = extensions.Evaluator(val_iter, model, device=device)
-    evaluator = chainermn.create_multi_node_evaluator(evaluator, comm)
     trainer.extend(evaluator, trigger=val_interval)
-
-    # Give file names data and time to prevent loosing information during reruns
-
-    filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
-
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
-        trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
-        # trainer.extend(extensions.observe_lr(), trigger=log_interval)
+        time_log_file = open(os.path.join(out, "function_time.log"), "a")
+
+
+    # Some display and output extensions are necessary only for one worker.
+
+    # Some display and output extensions are necessary only for one worker.
+    if comm.rank == 0:
+        # trainer.extend(extensions.DumpGraph('main/loss'))
+        trainer.extend(extensions.LogReport(trigger=log_interval))
+        trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
+        trainer.extend(extensions.ProgressBar(update_interval=10))
         trainer.extend(extensions.PrintReport(
             ['epoch', 'main/loss', 'validation/main/loss',
              'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
@@ -171,15 +195,20 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar(update_interval=10))
+        trainer.extend(extensions.ProgressBar())
+    # TODO : Figure out how to send this report to a file
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    trainer.run()
-
+    hook = TimerHook()
+    with hook:
+        trainer.run()
     if comm.rank == 0:
         print("Finished")
+
+    if comm.rank == 0:
+        hook.print_report(unit="ms", file=time_log_file)
 
 
 if __name__ == '__main__':
