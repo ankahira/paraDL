@@ -103,3 +103,59 @@ class ResNet50(chainer.Chain):
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
         return h
+
+
+class ResNet101(chainer.Chain):
+
+    insize = 224
+
+    def __init__(self):
+        super(ResNet101, self).__init__()
+        with self.init_scope():
+            self.conv1 = L.Convolution2D(
+                3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(3, 64, 64, 256, 1)
+            self.res3 = Block(4, 256, 128, 512)
+            self.res4 = Block(23, 512, 256, 1024)
+            self.res5 = Block(3, 1024, 512, 2048)
+            self.fc = L.Linear(2048, 1000)
+
+    def __call__(self, x):
+        h = self.bn1(self.conv1(x))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h
+
+
+class ResNet152(chainer.Chain):
+
+    insize = 224
+
+    def __init__(self):
+        super(ResNet152, self).__init__()
+        with self.init_scope():
+            self.conv1 = L.Convolution2D(
+                3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(3, 64, 64, 256, 1)
+            self.res3 = Block(4, 256, 128, 512)
+            self.res4 = Block(36, 512, 256, 1024)
+            self.res5 = Block(3, 1024, 512, 2048)
+            self.fc = L.Linear(2048, 1000)
+
+    def __call__(self, x):
+        h = self.bn1(self.conv1(x))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h

@@ -8,17 +8,15 @@
 #$ -p -400
 
 
-
-
 source /etc/profile.d/modules.sh
 source ~/.bash_profile
 conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 32 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow.py  --batchsize=1  --epochs=20  --out="results/32"
+# mpiexec -n 32 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow.py  --batchsize=1  --epochs=20  --out="results/32"
 
-
+mpiexec -n 32 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow_256.py  --batchsize=1  --epochs=20  --out="results_256/32"
 
 
 

@@ -1,5 +1,3 @@
-# Original author: yasunorikudo
-# (https://github.com/yasunorikudo/chainer-ResNet)
 
 import chainer
 import chainer.functions as F
@@ -33,7 +31,6 @@ class BottleNeckA(chainer.Chain):
         h1 = F.relu(self.bn2(FX.allreduce(self.conv2(h1), self.comm)))
         h1 = FX.split(self.comm, h1)
         h1 = self.bn3(FX.allreduce(self.conv3(h1),  self.comm))
-
         h2 = FX.split(self.comm, x)
         h2 = self.bn4(FX.allreduce(self.conv4(h2),  self.comm))
         return F.relu(h1 + h2)
@@ -92,6 +89,62 @@ class ResNet50(chainer.Chain):
             self.res2 = Block(self.comm, 3, 64, 64, 256, 1)
             self.res3 = Block(self.comm, 4, 256, 128, 512)
             self.res4 = Block(self.comm, 6, 512, 256, 1024)
+            self.res5 = Block(self.comm, 3, 1024, 512, 2048)
+            self.fc = L.Linear(2048, 1000)
+
+    def __call__(self, x):
+        h = FX.split(self.comm, x)
+        h = self.bn1(FX.allreduce(self.conv1(h), self.comm))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h
+
+
+class ResNet101(chainer.Chain):
+    insize = 224
+
+    def __init__(self, comm):
+        self.comm = comm
+        super(ResNet101, self).__init__()
+        with self.init_scope():
+            self.conv1 = L.Convolution2D(None, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(self.comm, 3, 64, 64, 256, 1)
+            self.res3 = Block(self.comm, 4, 256, 128, 512)
+            self.res4 = Block(self.comm, 23, 512, 256, 1024)
+            self.res5 = Block(self.comm, 3, 1024, 512, 2048)
+            self.fc = L.Linear(2048, 1000)
+
+    def __call__(self, x):
+        h = FX.split(self.comm, x)
+        h = self.bn1(FX.allreduce(self.conv1(h), self.comm))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h
+
+
+class ResNet152(chainer.Chain):
+    insize = 224
+
+    def __init__(self, comm):
+        self.comm = comm
+        super(ResNet101, self).__init__()
+        with self.init_scope():
+            self.conv1 = L.Convolution2D(None, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(self.comm, 3, 64, 64, 256, 1)
+            self.res3 = Block(self.comm, 4, 256, 128, 512)
+            self.res4 = Block(self.comm, 36, 512, 256, 1024)
             self.res5 = Block(self.comm, 3, 1024, 512, 2048)
             self.fc = L.Linear(2048, 1000)
 

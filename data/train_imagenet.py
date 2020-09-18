@@ -21,7 +21,9 @@ import matplotlib
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
-from models.resnet50 import ResNet50
+from models.resnet50 import ResNet50, ResNet101, ResNet152
+# from models.resnet import ResNet
+
 matplotlib.use('Agg')
 
 # Global Variables
@@ -74,9 +76,12 @@ def main():
 
     models = {
         'alexnet': AlexNet,
-        'resnet': ResNet50,
+        'resnet50': ResNet50,
+        'resnet101': ResNet101,
+        'resnet152': ResNet152,
         'vgg': VGG,
     }
+
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
     parser.add_argument('--model', '-M', choices=models.keys(), default='AlexNet', help='Convnet model')
@@ -115,6 +120,8 @@ def main():
             print("Error: %s - %s." % (e.filename, e.strerror))
     # model = models[args.model]()
     model = L.Classifier(models[args.model]())
+    # model = L.Classifier(ResNet152(152))
+
 
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
@@ -146,10 +153,10 @@ def main():
 
     updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
     # updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
+    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
 
     val_interval = (100, 'epoch')
-    log_interval = (1, 'iteration')
+    log_interval = (1, 'epoch')
 
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)

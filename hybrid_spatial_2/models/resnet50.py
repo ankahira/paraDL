@@ -158,3 +158,99 @@ class ResNet50(chainer.Chain):
         h = F.average_pooling_2d(h, 7, stride=1)
         h = self.fc(h)
         return h
+
+
+class ResNet101(chainer.Chain):
+    def __init__(self, original_comm, local_comm, out):
+        super(ResNet50, self).__init__()
+        self.comm = local_comm
+        self.original_comm = original_comm
+        self.out = out
+        print("Original Comm", self.original_comm.rank, "Local Comm", self.comm.rank)
+
+        with self.init_scope():
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            del INDICES[0]
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(self.original_comm, self.comm, self.out, 3, 64, 64, 256, 1)
+            self.res3 = Block(self.original_comm, self.comm, self.out, 4, 256, 128, 512)
+            self.res4 = Block(self.original_comm, self.comm, self.out, 23, 512, 256, 1024)
+            self.res5 = Block(self.original_comm, self.comm, self.out, 3, 1024, 512, 2048)
+            self.fc = L.Linear(None, 1000)
+
+    def __call__(self, x):
+        global FORWARD_INDICES
+        FORWARD_INDICES = list(range(1, 100))
+        partions = cp.array_split(x, self.comm.size, -2)
+        if self.comm.rank == 0:
+            x = partions[0]
+        elif self.comm.rank == 1:
+            x = partions[1]
+        elif self.comm.rank == 2:
+            x = partions[2]
+        elif self.comm.rank == 3:
+            x = partions[3]
+        else:
+            print("Rank does not exist")
+
+        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=7, index=FORWARD_INDICES[0], pad=3, out=self.out)
+        del FORWARD_INDICES[0]
+        h = self.bn1(self.conv1(h))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
+        h = F.concat(hs, -2)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h
+
+
+class ResNet152(chainer.Chain):
+    def __init__(self, original_comm, local_comm, out):
+        super(ResNet50, self).__init__()
+        self.comm = local_comm
+        self.original_comm = original_comm
+        self.out = out
+        print("Original Comm", self.original_comm.rank, "Local Comm", self.comm.rank)
+
+        with self.init_scope():
+            self.conv1 = LX.SpatialConvolution2D(self.original_comm, self.comm, self.out, INDICES[0], 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
+            del INDICES[0]
+            self.bn1 = L.BatchNormalization(64)
+            self.res2 = Block(self.original_comm, self.comm, self.out, 3, 64, 64, 256, 1)
+            self.res3 = Block(self.original_comm, self.comm, self.out, 4, 256, 128, 512)
+            self.res4 = Block(self.original_comm, self.comm, self.out, 36, 512, 256, 1024)
+            self.res5 = Block(self.original_comm, self.comm, self.out, 3, 1024, 512, 2048)
+            self.fc = L.Linear(None, 1000)
+
+    def __call__(self, x):
+        global FORWARD_INDICES
+        FORWARD_INDICES = list(range(1, 100))
+        partions = cp.array_split(x, self.comm.size, -2)
+        if self.comm.rank == 0:
+            x = partions[0]
+        elif self.comm.rank == 1:
+            x = partions[1]
+        elif self.comm.rank == 2:
+            x = partions[2]
+        elif self.comm.rank == 3:
+            x = partions[3]
+        else:
+            print("Rank does not exist")
+
+        h = FX.halo_exchange(self.original_comm, self.comm, x, k_size=7, index=FORWARD_INDICES[0], pad=3, out=self.out)
+        del FORWARD_INDICES[0]
+        h = self.bn1(self.conv1(h))
+        h = F.max_pooling_2d(F.relu(h), 3, stride=2)
+        h = self.res2(h)
+        h = self.res3(h)
+        h = self.res4(h)
+        h = self.res5(h)
+        hs = chainermnx.functions.spatialallgather(self.original_comm, self.comm, h, self.out)
+        h = F.concat(hs, -2)
+        h = F.average_pooling_2d(h, 7, stride=1)
+        h = self.fc(h)
+        return h

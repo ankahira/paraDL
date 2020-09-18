@@ -12,9 +12,9 @@ conda activate
 
 source ~/.bash_profile
 
-mpiexec -n 128 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow.py  --batchsize=1  --epochs=20  --out="results/128"
+# mpiexec -n 128 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow.py  --batchsize=1  --epochs=20  --out="results/128"
 
-
+mpiexec -n 128 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_hybrid_cosmoflow_256.py  --batchsize=1  --epochs=20  --out="results_256/128"
 
 
 
