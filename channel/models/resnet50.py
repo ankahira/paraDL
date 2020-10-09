@@ -138,7 +138,7 @@ class ResNet152(chainer.Chain):
 
     def __init__(self, comm):
         self.comm = comm
-        super(ResNet101, self).__init__()
+        super(ResNet152, self).__init__()
         with self.init_scope():
             self.conv1 = L.Convolution2D(None, 64, 7, 2, 3, initialW=initializers.HeNormal())
             self.bn1 = L.BatchNormalization(64)

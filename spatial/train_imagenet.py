@@ -23,6 +23,9 @@ import chainermnx
 from models.alexnet import AlexNet
 from models.vgg import VGG
 from models.resnet50 import ResNet50
+from models.resnet50 import ResNet50, ResNet101, ResNet152
+
+
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global
@@ -82,6 +85,7 @@ def main():
         'alexnet': AlexNet,
         'resnet': ResNet50,
         'vgg': VGG,
+        'resnet152': ResNet152,
     }
 
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')

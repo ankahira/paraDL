@@ -81,8 +81,6 @@ def main():
         'resnet152': ResNet152,
         'vgg': VGG,
     }
-
-
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
     parser.add_argument('--model', '-M', choices=models.keys(), default='AlexNet', help='Convnet model')
     parser.add_argument('--batchsize', '-B', type=int, default=32, help='Learning minibatch size')
@@ -153,10 +151,10 @@ def main():
 
     updater = chainermnx.training.StandardUpdater(train_iter, optimizer, comm, out=out, device=device)
     # updater = training.StandardUpdater(train_iter, optimizer, device=device)
-    trainer = training.Trainer(updater, (epochs, 'epoch'), out)
+    trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
     val_interval = (100, 'epoch')
-    log_interval = (1, 'epoch')
+    log_interval = (1, 'iteration')
 
     # Create a multi node evaluator from an evaluator.
     evaluator = extensions.Evaluator(val_iter, model, device=device)

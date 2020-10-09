@@ -27,10 +27,6 @@ sleep 100
 qsub -g gaa50004 scripts/cosmoflow_16.sh
 sleep 100
 qsub -g gaa50004 scripts/cosmoflow_32.sh
-sleep 600
-qsub -g gaa50004 scripts/cosmoflow_128.sh
-sleep 600
-qsub -g gaa50004 scripts/cosmoflow_512.sh
 
 
 

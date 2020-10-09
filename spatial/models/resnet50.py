@@ -17,8 +17,8 @@ some pad regions were modified, make sure they are exactly the same as data para
 
 """
 
-INDICES = list(range(1, 60))
-FORWARD_INDICES = list(range(1, 100))
+INDICES = list(range(1, 20000))
+FORWARD_INDICES = list(range(1, 20000))
 
 
 class BottleNeckA(chainer.Chain):
@@ -62,7 +62,6 @@ class BottleNeckA(chainer.Chain):
 
 
 class BottleNeckB(chainer.Chain):
-
     def __init__(self, original_comm,  comm, out, in_size, ch):
         super(BottleNeckB, self).__init__()
         self.comm = comm
@@ -160,7 +159,7 @@ class ResNet50(chainer.Chain):
 
 class ResNet101(chainer.Chain):
     def __init__(self, original_comm, local_comm, out):
-        super(ResNet50, self).__init__()
+        super(ResNet101, self).__init__()
         self.comm = local_comm
         self.original_comm = original_comm
         self.out = out
@@ -222,7 +221,7 @@ class ResNet152(chainer.Chain):
 
     def __call__(self, x):
         global FORWARD_INDICES
-        FORWARD_INDICES = list(range(1, 100))
+        FORWARD_INDICES = list(range(1, 1000))
         partions = cp.array_split(x, self.comm.size, -2)
         if self.comm.rank == 0:
             x = partions[0]

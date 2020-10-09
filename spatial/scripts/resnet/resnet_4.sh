@@ -12,7 +12,7 @@ conda activate
 
 source ~/.bash_profile
 
-mpirun  -n 4  python train_imagenet.py  --model=resnet  --batchsize=64  --epochs=100  --out="results/resnet/4"
+mpirun  -n 4  python train_imagenet.py  --model=resnet152  --batchsize=64  --epochs=100  --out="results/resnet/4"
 
 
 

@@ -13,12 +13,7 @@ conda activate
 module load cuda/10.0/10.0.130 cudnn/7.6/7.6.4 nccl/2.4/2.4.8-1 openmpi/2.1.6
 
 
-mpiexec -n 4 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet50  --batchsize=64  --epochs=100  --out="results/resnet/4"
-
-mpiexec -n 4 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet101  --batchsize=128  --epochs=100  --out="results/resnet/4"
-
-
-mpiexec -n 4 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet152  --batchsize=128  --epochs=100  --out="results/resnet/4"
+mpiexec -n 4 --hostfile $SGE_JOB_HOSTLIST --oversubscribe  python train_imagenet.py  --model=resnet152  --batchsize=64  --epochs=100  --out="results/resnet/4"
 
 
 

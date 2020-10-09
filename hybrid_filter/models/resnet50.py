@@ -146,7 +146,7 @@ class ResNet152(chainer.Chain):
         self.comm = comm
         self.original_comm = original_comm
         self.out = out
-        super(ResNet50, self).__init__()
+        super(ResNet152, self).__init__()
         with self.init_scope():
             self.conv1 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, 3, 64, 7, 2, 3, initialW=initializers.HeNormal())
             self.bn1 = L.BatchNormalization(64)
