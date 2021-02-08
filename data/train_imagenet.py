@@ -6,7 +6,9 @@ import random
 import numpy as np
 import multiprocessing
 import shutil
+import os
 
+import cupy as cp
 import chainer.backends.cuda
 from chainer import training
 from chainer.training import extensions
@@ -15,24 +17,25 @@ import chainermnx
 import chainer.links as L
 from datetime import datetime
 
+from chainer.function_hooks import TimerHook, CupyMemoryProfileHook
 
 import matplotlib
 
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
-from models.resnet50 import ResNet50, ResNet101, ResNet152
+from models.resnet import ResNet50, ResNet101, ResNet152
 # from models.resnet import ResNet
 
 matplotlib.use('Agg')
 
 # Global Variables
 
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
+TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -72,7 +75,10 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
-
+    # These two lines help with memory. If they are not included training runs out of memory.
+    # Use them till you the real reason why its running out of memory
+    # pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
+    # cp.cuda.set_allocator(pool.malloc)
 
     models = {
         'alexnet': AlexNet,
@@ -101,6 +107,8 @@ def main():
     comm = chainermnx.create_communicator("pure_nccl")
     device = comm.intra_rank
 
+    print("Comm initialized")
+
     if comm.rank == 0:
         print('==========================================')
         print('Num of GPUs : {}'.format(comm.size))
@@ -116,13 +124,19 @@ def main():
             shutil.rmtree(out)
         except OSError as e:
             print("Error: %s - %s." % (e.filename, e.strerror))
+        try:
+            os.makedirs(out)
+            print("Created Dir")
+        except OSError:
+            pass
     # model = models[args.model]()
     model = L.Classifier(models[args.model]())
     # model = L.Classifier(ResNet152(152))
 
-
     chainer.backends.cuda.get_device_from_id(device).use()  # Make the GPU current
     model.to_gpu()
+
+    print("Model attached to GPU")
 
     # Split and distribute the dataset. Only worker 0 loads the whole dataset.
     # Datasets of worker 0 are evenly split and distributed to all workers.
@@ -134,11 +148,17 @@ def main():
         train = None
         val = None
     # model inputs come from datasets, and each process takes different mini-batches
+    print("Data loaders created")
+
     train = chainermn.scatter_dataset(train, comm, shuffle=True)
     val = chainermn.scatter_dataset(val, comm, shuffle=True)
 
-    train_iter = chainer.iterators.MultithreadIterator(train, batch_size, n_threads=80, shuffle=True)
-    val_iter = chainer.iterators.MultithreadIterator(val, batch_size, n_threads=80, repeat=False)
+    print("Scatter data finished")
+
+    train_iter = chainer.iterators.MultiprocessIterator(train, batch_size, shuffle=True)
+    val_iter = chainer.iterators.MultiprocessIterator(val, batch_size,  repeat=False)
+
+    print("Data Iterators created")
 
     # Create a multi node optimizer from a standard Chainer optimizer.
     # This optimiser is modified to take two comms are its the same used for other parallelism strategies.
@@ -153,6 +173,8 @@ def main():
     # updater = training.StandardUpdater(train_iter, optimizer, device=device)
     trainer = training.Trainer(updater, (epochs, 'iteration'), out)
 
+    print("Trainer created")
+
     val_interval = (100, 'epoch')
     log_interval = (1, 'iteration')
 
@@ -164,26 +186,33 @@ def main():
     # Give file names data and time to prevent loosing information during reruns
 
     filename = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + ".log"
+    print("Log files created")
 
     if comm.rank == 0:
-        trainer.extend(extensions.DumpGraph('main/loss'))
+        # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval, filename=filename))
         # trainer.extend(extensions.observe_lr(), trigger=log_interval)
-        trainer.extend(extensions.PrintReport(
-            ['epoch', 'main/loss', 'validation/main/loss',
-             'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-        trainer.extend(extensions.PlotReport(
-            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-        trainer.extend(extensions.PlotReport(
-            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        # trainer.extend(extensions.PrintReport(
+        #     ['epoch', 'main/loss', 'validation/main/loss',
+        #      'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        # trainer.extend(extensions.PlotReport(
+        #     ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        # trainer.extend(extensions.PlotReport(
+        #     ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
         trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    trainer.run()
+    # trainer.run()
+    time_hook_results_file = open(os.path.join(args.out, "function_times.txt"), "a")
+    hook = TimerHook()
+    with hook:
+        trainer.run()
 
     if comm.rank == 0:
+        hook.print_report()
+        hook.print_report(file=time_hook_results_file)
         print("Finished")
 
 

@@ -36,6 +36,7 @@ class CosmoFlow(Chain):
             self.Output = L.Linear(None, 4)
 
     def forward(self, x, y):
+
         partions = cp.array_split(x, self.comm.size, -2)
         # This part needs fixing. Probably all conditions are not checked
         if self.comm.rank == 0:

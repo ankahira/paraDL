@@ -26,11 +26,6 @@ matplotlib.use('Agg')
 
 
 def main():
-    # These two lines help with memory. If they are not included training runs out of memory.
-    # Use them till you the real reason why its running out of memory
-
-    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-    cp.cuda.set_allocator(pool.malloc)
     chainer.disable_experimental_feature_warning = True
 
     parser = argparse.ArgumentParser(description='CosmoFlow Multi-Node Training')

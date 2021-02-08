@@ -18,6 +18,7 @@ def temp_data_prep():
     Y = np.random.rand(40, 4).astype(np.float32)
 
     dataset = datasets.TupleDataset(X, Y)
+    print("this is it")
 
     return dataset
 

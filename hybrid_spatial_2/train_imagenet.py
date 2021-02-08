@@ -23,7 +23,7 @@ import chainermn
 from models.alexnet import AlexNet
 
 from models.vgg import VGG
-from models.resnet50 import ResNet50
+from models.resnet import ResNet50, ResNet152, ResNet101
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global

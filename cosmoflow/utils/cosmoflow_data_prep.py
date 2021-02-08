@@ -1,14 +1,14 @@
 import os
 import h5py
-from chainer.dataset.dataset_mixin import DatasetMixin
-
 import chainer
+from chainer.dataset.dataset_mixin import DatasetMixin
 
 
 def read_hdf5_file(path):
     f = h5py.File(path, 'r')
-    sample = f["full"][()].reshape(4, 512, 512, 512).astype("float32")
-    label = f["unitPar"][()].astype("float32")
+    sample = f["sample"][()]
+    label = f["label"][()].astype("float32")
+    f.close()
     return sample, label
 
 

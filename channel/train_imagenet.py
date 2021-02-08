@@ -21,23 +21,21 @@ from chainer.function_hooks import TimerHook
 
 import chainermn
 import chainermnx
-
 import chainer.links as L
 
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
-from models.resnet50 import ResNet50
-from models.resnet50 import ResNet50, ResNet101, ResNet152
+from models.resnet import ResNet50, ResNet101, ResNet152
 
 
 
 # Global Variables
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
+TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -77,17 +75,12 @@ class PreprocessedDataset(chainer.dataset.DatasetMixin):
 
 
 def main():
-    # These two lines help with memory. If they are not included training runs out of memory.
-    # Use them till you the real reason why its running out of memory
-
-    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-    cp.cuda.set_allocator(pool.malloc)
 
     chainer.disable_experimental_feature_warning = True
 
     models = {
         'alexnet': AlexNet,
-        'resnet': ResNet50,
+        'resnet50': ResNet50,
         'vgg': VGG,
         'resnet152': ResNet152,
     }
@@ -102,13 +95,6 @@ def main():
     batch_size = args.batchsize
     epochs = args.epochs
     out = args.out
-
-    # Start method of multiprocessing module need to be changed if we are using InfiniBand and MultiprocessIterator.
-    # multiprocessing.set_start_method('forkserver')
-    # p = multiprocessing.Process()
-    # p.start()
-    # p.join()
-
 
     # Clean up logs and directories from previous runs. This is temporary. In the future just add time stamps to logs
 
@@ -188,28 +174,29 @@ def main():
         # trainer.extend(extensions.DumpGraph('main/loss'))
         trainer.extend(extensions.LogReport(trigger=log_interval))
         trainer.extend(extensions.observe_lr(), trigger=(1, 'epoch'))
-        trainer.extend(extensions.PrintReport(
-            ['epoch', 'main/loss', 'validation/main/loss',
-             'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
-        trainer.extend(extensions.PlotReport(
-            ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
-        trainer.extend(extensions.PlotReport(
-            ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
-        trainer.extend(extensions.ProgressBar())
-
-    # TODO : Figure out how to send this report to a file
+        # trainer.extend(extensions.PrintReport(
+        #     ['epoch', 'main/loss', 'validation/main/loss',
+        #      'main/accuracy', 'validation/main/accuracy', 'elapsed_time']))
+        # trainer.extend(extensions.PlotReport(
+        #     ['main/loss', 'validation/main/loss'], 'epoch', filename='loss.png'))
+        # trainer.extend(extensions.PlotReport(
+        #     ['main/accuracy', 'validation/main/accuracy'], 'epoch', filename='accuracy.png'))
+        trainer.extend(extensions.ProgressBar(update_interval=10))
 
     if comm.rank == 0:
         print("Starting training .....")
 
-    # hook = TimerHook()
-    # with hook:
-    trainer.run()
-    if comm.rank == 0:
-        print("Finished")
+    hook = TimerHook()
+    time_hook_results_file = open(os.path.join(args.out, "function_times.txt"), "a")
 
-    # if comm.rank == 0:
-    #     hook.print_report()
+    with hook:
+        trainer.run()
+        if comm.rank == 0:
+            print("Finished")
+
+    if comm.rank == 0:
+        hook.print_report()
+        hook.print_report(file=time_hook_results_file)
 
 
 if __name__ == '__main__':

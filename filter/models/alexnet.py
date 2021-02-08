@@ -7,14 +7,17 @@ from chainermnx.links import FilterParallelConvolution2D,  FilterParallelFC
 
 
 class AlexNet(chainer.Chain):
-    def __init__(self, comm):
+    def __init__(self,  original_comm, comm, out):
+        self.comm = comm
+        self.original_comm = original_comm
+        self.out = out
         super(AlexNet, self).__init__()
         with self.init_scope():
-            self.conv1 = FilterParallelConvolution2D(comm, None, 96, 11, stride=4)
-            self.conv2 = FilterParallelConvolution2D(comm, None, 256, 5, pad=2)
-            self.conv3 = FilterParallelConvolution2D(comm, None, 384, 3, pad=1)
-            self.conv4 = FilterParallelConvolution2D(comm, None, 384, 3, pad=1)
-            self.conv5 = FilterParallelConvolution2D(comm, None, 256, 3, pad=1)
+            self.conv1 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, None, 96, 11, stride=4)
+            self.conv2 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, None, 256, 5, pad=2)
+            self.conv3 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, None, 384, 3, pad=1)
+            self.conv4 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, None, 384, 3, pad=1)
+            self.conv5 = FilterParallelConvolution2D(self.original_comm, self.comm, self.out, None, 256, 3, pad=1)
             self.fc6 = L.Linear(None, 4096)
             self.fc7 = L.Linear(None, 4096)
             self.fc8 = L.Linear(None, 1000)

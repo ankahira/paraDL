@@ -12,10 +12,9 @@ matplotlib.use('Agg')
 
 
 def temp_data_prep():
+    X = np.random.rand(64, 4, 256, 256, 256).astype(np.float32)
 
-    X = np.random.rand(128, 4, 128, 128, 128).astype(np.float32)
-
-    Y = np.random.rand(128, 4).astype(np.float32)
+    Y = np.random.rand(64, 4).astype(np.float32)
 
     dataset = datasets.TupleDataset(X, Y)
 

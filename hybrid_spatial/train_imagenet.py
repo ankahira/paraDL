@@ -6,6 +6,8 @@ import random
 import shutil
 import os
 
+from chainer.function_hooks import TimerHook
+
 import numpy as np
 import cupy as cp
 import chainer.backends.cuda
@@ -21,17 +23,16 @@ import chainermn
 from models.alexnet import AlexNet
 
 from models.vgg import VGG
-from models.resnet50 import ResNet50
-from models.resnet50 import ResNet50, ResNet101, ResNet152
+from models.resnet import ResNet50, ResNet101, ResNet152
 
 numpy.set_printoptions(threshold=sys.maxsize)
 
 # Global
-TRAIN = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/train.txt"
+TRAIN = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/train.txt"
 VAL = "/groups2/gaa50004/data/ILSVRC2012/val_256x256/val.txt"
-TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/"
+TRAINING_ROOT = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/"
 VALIDATION_ROOT = "/groups2/gaa50004/data/ILSVRC2012/val_256x256"
-MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/train_256x256/mean.npy"
+MEAN_FILE = "/groups2/gaa50004/data/ILSVRC2012/pytorch/train/mean.npy"
 
 
 class PreprocessedDataset(chainer.dataset.DatasetMixin):
@@ -102,15 +103,10 @@ def create_data_comm(comm):
 
 
 def main():
-    # These two lines help with memory. If they are not included training runs out of memory.
-    # Use them till you the real reason why its running out of memory
-    pool = cp.cuda.MemoryPool(cp.cuda.malloc_managed)
-    cp.cuda.set_allocator(pool.malloc)
-
     chainer.disable_experimental_feature_warning = True
     models = {
         'alexnet': AlexNet,
-        'resnet': ResNet50,
+        'resnet50': ResNet50,
         'vgg': VGG,
         'resnet152': ResNet152,
 
@@ -236,10 +232,17 @@ def main():
     if comm.rank == 0:
         print("Starting training .....")
 
-    trainer.run()
+    # trainer.run()
+
+    hook = TimerHook()
+    time_hook_results_file = open(os.path.join(args.out, "function_times.txt"), "a")
+    with hook:
+        trainer.run()
+
     if comm.rank == 0:
         print("Finished")
-    # serializers.save_npz('spatial_model_rank_{}.npz'.format(comm.rank), model)
+        hook.print_report()
+        hook.print_report(file=time_hook_results_file)
 
 
 if __name__ == '__main__':

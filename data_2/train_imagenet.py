@@ -21,8 +21,7 @@ import matplotlib
 # Local Imports
 from models.alexnet import AlexNet
 from models.vgg import VGG
-from models.resnet50 import ResNet50
-from models.simple import Simple
+from models.resnet import ResNet50, ResNet101, ResNet152
 matplotlib.use('Agg')
 
 # Global Variables
@@ -75,12 +74,11 @@ def main():
 
     models = {
         'alexnet': AlexNet,
-        'resnet': ResNet50,
+        'resnet50': ResNet50,
+        'resnet152': ResNet152,
         'vgg': VGG,
-        'simple': Simple,
 
     }
-
     parser = argparse.ArgumentParser(description='Train ImageNet From Scratch')
     parser.add_argument('--model', '-M', choices=models.keys(), default='AlexNet', help='Convnet model')
     parser.add_argument('--batchsize', '-B', type=int, default=32, help='Learning minibatch size')
